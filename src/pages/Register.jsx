@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import InputMask from 'react-input-mask';
 import './Register.css';
 
 const CheckoutForm = ({ registrationData, total, onSuccess }) => {
@@ -72,10 +73,13 @@ export default function Register() {
     email: '', 
     phone: '',
     address: '',
+    apartment: '',
     city: '',
+    country: 'US',
     state: '',
     zipCode: ''
   });
+  const [emailError, setEmailError] = useState('');
   const [agreement, setAgreement] = useState({
     liability: false,
     medical: false,
@@ -93,7 +97,22 @@ export default function Register() {
   };
 
   const handleParentChange = (field, value) => {
-    setParent(prev => ({ ...prev, [field]: value }));
+    setParent(prev => ({ 
+      ...prev, 
+      [field]: value,
+      // Reset state when country changes
+      ...(field === 'country' && { state: '' })
+    }));
+    
+    // Email validation
+    if (field === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && !emailRegex.test(value)) {
+        setEmailError('Please enter a valid email address');
+      } else {
+        setEmailError('');
+      }
+    }
   };
 
   const handleAgreementChange = (field, value) => {
@@ -137,8 +156,9 @@ export default function Register() {
   };
 
   const isStep1Valid = () => {
-    return parent.name && parent.email && parent.phone && parent.address && 
-           parent.city && parent.state && parent.zipCode;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return parent.name && parent.email && emailRegex.test(parent.email) && 
+           parent.phone && parent.address && parent.city && parent.country && parent.state && parent.zipCode;
   };
 
   const isStep2Valid = () => {
@@ -151,6 +171,56 @@ export default function Register() {
   const isStep3Valid = () => {
     return agreement.liability && agreement.medical && agreement.photos && agreement.conduct;
   };
+
+  // Country and state/province data
+  const countries = [
+    { code: 'US', name: 'United States' },
+    { code: 'CA', name: 'Canada' },
+    { code: 'GB', name: 'United Kingdom' },
+    { code: 'AU', name: 'Australia' },
+    { code: 'DE', name: 'Germany' },
+    { code: 'FR', name: 'France' },
+    { code: 'IN', name: 'India' },
+    { code: 'PK', name: 'Pakistan' },
+    { code: 'BD', name: 'Bangladesh' },
+    { code: 'SA', name: 'Saudi Arabia' },
+    { code: 'AE', name: 'United Arab Emirates' },
+    { code: 'EG', name: 'Egypt' },
+    { code: 'TR', name: 'Turkey' },
+    { code: 'MY', name: 'Malaysia' },
+    { code: 'ID', name: 'Indonesia' },
+    { code: 'SG', name: 'Singapore' },
+    { code: 'OTHER', name: 'Other' }
+  ];
+
+  const getStatesForCountry = (countryCode) => {
+    const stateData = {
+      'US': [
+        'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
+        'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky',
+        'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi',
+        'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico',
+        'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania',
+        'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
+        'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+      ],
+      'CA': [
+        'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador',
+        'Northwest Territories', 'Nova Scotia', 'Nunavut', 'Ontario', 'Prince Edward Island',
+        'Quebec', 'Saskatchewan', 'Yukon'
+      ],
+      'GB': [
+        'England', 'Scotland', 'Wales', 'Northern Ireland'
+      ],
+      'AU': [
+        'Australian Capital Territory', 'New South Wales', 'Northern Territory', 'Queensland',
+        'South Australia', 'Tasmania', 'Victoria', 'Western Australia'
+      ]
+    };
+    return stateData[countryCode] || [];
+  };
+
+  const currentStates = getStatesForCountry(parent.country);
 
   if (paymentSuccess) {
     return (
@@ -198,25 +268,45 @@ export default function Register() {
                   type="email"
                   required 
                   value={parent.email} 
-                  onChange={e => handleParentChange('email', e.target.value)} 
+                  onChange={e => handleParentChange('email', e.target.value)}
+                  className={emailError ? 'error' : ''}
                 />
+                {emailError && <span className="error-message">{emailError}</span>}
               </div>
               <div className="form-group">
                 <label>Phone Number *</label>
-                <input 
-                  type="tel"
-                  required 
-                  value={parent.phone} 
-                  onChange={e => handleParentChange('phone', e.target.value)} 
-                />
+                <InputMask
+                  mask="(999) 999-9999"
+                  value={parent.phone}
+                  onChange={e => handleParentChange('phone', e.target.value)}
+                >
+                  {(inputProps) => (
+                    <input 
+                      {...inputProps}
+                      type="tel"
+                      required
+                      placeholder="(123) 456-7890"
+                    />
+                  )}
+                </InputMask>
               </div>
-              <div className="form-group full-width">
-                <label>Address *</label>
+              <div className="form-group">
+                <label>Street Address *</label>
                 <input 
                   type="text"
                   required 
                   value={parent.address} 
-                  onChange={e => handleParentChange('address', e.target.value)} 
+                  onChange={e => handleParentChange('address', e.target.value)}
+                  placeholder="Enter your street address"
+                />
+              </div>
+              <div className="form-group">
+                <label>Apartment/Unit/Suite</label>
+                <input 
+                  type="text"
+                  value={parent.apartment} 
+                  onChange={e => handleParentChange('apartment', e.target.value)}
+                  placeholder="Apt 123, Unit B, Suite 456"
                 />
               </div>
               <div className="form-group">
@@ -229,21 +319,66 @@ export default function Register() {
                 />
               </div>
               <div className="form-group">
-                <label>State *</label>
-                <input 
-                  type="text"
+                <label>Country *</label>
+                <select 
                   required 
-                  value={parent.state} 
-                  onChange={e => handleParentChange('state', e.target.value)} 
-                />
+                  value={parent.country} 
+                  onChange={e => handleParentChange('country', e.target.value)}
+                >
+                  {countries.map(country => (
+                    <option key={country.code} value={country.code}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
-                <label>Zip Code *</label>
+                <label>
+                  {parent.country === 'US' ? 'State' : 
+                   parent.country === 'CA' ? 'Province' : 
+                   parent.country === 'GB' ? 'Region' : 
+                   parent.country === 'AU' ? 'State/Territory' : 
+                   'State/Province'} *
+                </label>
+                {currentStates.length > 0 ? (
+                  <select 
+                    required 
+                    value={parent.state} 
+                    onChange={e => handleParentChange('state', e.target.value)}
+                  >
+                    <option value="">Select {parent.country === 'US' ? 'State' : parent.country === 'CA' ? 'Province' : 'Region'}</option>
+                    {currentStates.map(state => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input 
+                    type="text"
+                    required 
+                    value={parent.state} 
+                    onChange={e => handleParentChange('state', e.target.value)}
+                    placeholder="Enter state/province"
+                  />
+                )}
+              </div>
+              <div className="form-group">
+                <label>
+                  {parent.country === 'US' ? 'Zip Code' : 
+                   parent.country === 'CA' ? 'Postal Code' : 
+                   parent.country === 'GB' ? 'Postcode' : 
+                   'Postal Code'} *
+                </label>
                 <input 
                   type="text"
                   required 
                   value={parent.zipCode} 
-                  onChange={e => handleParentChange('zipCode', e.target.value)} 
+                  onChange={e => handleParentChange('zipCode', e.target.value)}
+                  placeholder={parent.country === 'US' ? '12345' : 
+                             parent.country === 'CA' ? 'A1A 1A1' : 
+                             parent.country === 'GB' ? 'SW1A 1AA' : 
+                             'Enter postal code'}
                 />
               </div>
             </div>
@@ -357,12 +492,20 @@ export default function Register() {
                   </div>
                   <div className="form-group">
                     <label>Emergency Contact Phone *</label>
-                    <input 
-                      type="tel"
-                      required 
-                      value={child.emergencyPhone} 
-                      onChange={e => handleChildChange(idx, 'emergencyPhone', e.target.value)} 
-                    />
+                    <InputMask
+                      mask="(999) 999-9999"
+                      value={child.emergencyPhone}
+                      onChange={e => handleChildChange(idx, 'emergencyPhone', e.target.value)}
+                    >
+                      {(inputProps) => (
+                        <input 
+                          {...inputProps}
+                          type="tel"
+                          required
+                          placeholder="(123) 456-7890"
+                        />
+                      )}
+                    </InputMask>
                   </div>
                 </div>
               </div>
