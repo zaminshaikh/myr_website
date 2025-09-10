@@ -39,7 +39,10 @@ const HomePage = () => {
       <nav className="navbar">
         <div className="nav-container">
           <div className="nav-logo">
-            <img src="/api/placeholder/200/60" alt="Muslim Youth Retreat Logo" />
+            <div className="logo-text">
+              <span className="logo-main">MYR</span>
+              <span className="logo-sub">2023</span>
+            </div>
           </div>
           <ul className="nav-menu">
             <li><a href="#home">Home</a></li>
@@ -55,7 +58,7 @@ const HomePage = () => {
       {/* Hero Section */}
       <section id="home" className="hero-section">
         <div className="hero-background">
-          <img src="/api/placeholder/1400/600" alt="Youth Camp Background" />
+          <img src="/cabin-background.jpg" alt="Youth Camp Cabins" />
           <div className="hero-overlay">
             <div className="hero-content">
               <div className="countdown-badge">
