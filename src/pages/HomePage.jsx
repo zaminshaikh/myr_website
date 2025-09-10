@@ -365,7 +365,7 @@ const HomePage = () => {
         <div className="container">
           <h2>In Partnership With</h2>
           <div className="partner-logo">
-            <img src="/api/placeholder/300/150" alt="Wise Academy Logo" />
+            <img src="/wise-academy-logo.png" alt="Wise Academy Logo" />
           </div>
         </div>
       </section>

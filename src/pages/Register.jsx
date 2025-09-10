@@ -290,7 +290,7 @@ export default function Register() {
                   )}
                 </InputMask>
               </div>
-              <div className="form-group">
+              <div className="form-group full-width">
                 <label>Street Address *</label>
                 <input 
                   type="text"
