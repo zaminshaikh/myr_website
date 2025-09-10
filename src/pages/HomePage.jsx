@@ -74,8 +74,17 @@ const HomePage = () => {
                 
                 <div className="event-where">
                   <h3>Where</h3>
-                  <p>Florida Elks Youth Camp,<br />
-                     24175 SE Hwy 450, Umatilla, FL 32784, USA</p>
+                  <p>
+                    <a 
+                      href="https://maps.google.com/?q=Florida+Elks+Youth+Camp,+24175+SE+Hwy+450,+Umatilla,+FL+32784,+USA" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{color: 'inherit', textDecoration: 'underline'}}
+                    >
+                      Florida Elks Youth Camp,<br />
+                      24175 SE Hwy 450, Umatilla, FL 32784, USA
+                    </a>
+                  </p>
                 </div>
               </div>
               
