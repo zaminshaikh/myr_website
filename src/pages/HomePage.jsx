@@ -82,7 +82,7 @@ const HomePage = () => {
               <div className="hero-buttons">
                 <Link to="/register" className="register-btn">Register Now</Link>
                 <div className="pricing-info">
-                  <span className="price">Price: $225 Per Participant</span>
+                  <span className="price">Price: $275 Per Participant</span>
                   <span className="deadline">Registration Deadline: November 17th, 2025</span>
                 </div>
               </div>
