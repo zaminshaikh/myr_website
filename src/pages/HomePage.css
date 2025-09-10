@@ -99,6 +99,33 @@ body {
   transform: translateY(-1px);
 }
 
+/* Navigation Register Button */
+.nav-register {
+  display: flex;
+  align-items: center;
+}
+
+.nav-register-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+}
+
+.nav-register-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
 /* Modern Hero Section */
 .hero-section {
   position: relative;
@@ -663,6 +690,11 @@ body {
 @media (max-width: 768px) {
   .nav-menu {
     display: none;
+  }
+  
+  .nav-register-btn {
+    padding: 10px 20px;
+    font-size: 13px;
   }
   
   .hero-title {

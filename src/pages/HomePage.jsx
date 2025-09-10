@@ -52,6 +52,9 @@ const HomePage = () => {
             <li><a href="#faq">FAQ</a></li>
             <li><a href="#contact">Contact</a></li>
           </ul>
+          <div className="nav-register">
+            <Link to="/register" className="nav-register-btn">Register Now</Link>
+          </div>
         </div>
       </nav>
 
