@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Link as ScrollLink, Element } from 'react-scroll'
 import './HomePage.css'
 
 const HomePage = () => {
@@ -43,18 +42,18 @@ const HomePage = () => {
             <img src="/api/placeholder/200/60" alt="Muslim Youth Retreat Logo" />
           </div>
           <ul className="nav-menu">
-            <li><ScrollLink to="home" smooth={true} duration={500}>Home</ScrollLink></li>
-            <li><ScrollLink to="overview" smooth={true} duration={500}>Overview</ScrollLink></li>
-            <li><ScrollLink to="schedule" smooth={true} duration={500}>Schedule</ScrollLink></li>
-            <li><ScrollLink to="facilitators" smooth={true} duration={500}>Facilitators</ScrollLink></li>
-            <li><ScrollLink to="faq" smooth={true} duration={500}>FAQ</ScrollLink></li>
-            <li><ScrollLink to="contact" smooth={true} duration={500}>Contact</ScrollLink></li>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#schedule">Schedule</a></li>
+            <li><a href="#facilitators">Facilitators</a></li>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="#contact">Contact</a></li>
           </ul>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <Element name="home" className="hero-section">
+      <section id="home" className="hero-section">
         <div className="hero-background">
           <img src="/api/placeholder/1400/600" alt="Youth Camp Background" />
           <div className="hero-overlay">
@@ -87,10 +86,10 @@ const HomePage = () => {
             </div>
           </div>
         </div>
-      </Element>
+      </section>
 
       {/* Leadership Section */}
-      <Element name="overview" className="leadership-section">
+      <section id="overview" className="leadership-section">
         <div className="container">
           <h2>LEADERSHIP IN ACTION</h2>
           <div className="leadership-content">
@@ -106,7 +105,7 @@ const HomePage = () => {
             </p>
           </div>
         </div>
-      </Element>
+      </section>
 
       {/* Price Includes Section */}
       <section className="price-section">
@@ -178,7 +177,7 @@ const HomePage = () => {
       </section>
 
       {/* Schedule Section */}
-      <Element name="schedule" className="schedule-section">
+      <section id="schedule" className="schedule-section">
         <div className="container">
           <h2>Schedule</h2>
           
@@ -233,10 +232,10 @@ const HomePage = () => {
             </ul>
           </div>
         </div>
-      </Element>
+      </section>
 
       {/* Facilitators Section */}
-      <Element name="facilitators" className="facilitators-section">
+      <section id="facilitators" className="facilitators-section">
         <div className="container">
           <h2>Facilitators</h2>
           <div className="facilitators-grid">
@@ -254,10 +253,10 @@ const HomePage = () => {
             </div>
           </div>
         </div>
-      </Element>
+      </section>
 
       {/* FAQ Section */}
-      <Element name="faq" className="faq-section">
+      <section id="faq" className="faq-section">
         <div className="container">
           <h2>Frequently Asked Questions</h2>
           <div className="faq-list">
@@ -344,7 +343,7 @@ const HomePage = () => {
             </div>
           </div>
         </div>
-      </Element>
+      </section>
 
       {/* Partnership Section */}
       <section className="partnership-section">
@@ -376,7 +375,7 @@ const HomePage = () => {
       </section>
 
       {/* Contact Section */}
-      <Element name="contact" className="contact-section">
+      <section id="contact" className="contact-section">
         <div className="container">
           <h2>Contact Information</h2>
           <p>For additional information, please reach out to:</p>
@@ -384,7 +383,7 @@ const HomePage = () => {
             <p><strong>Kamran Datoo - 407-408-1048</strong></p>
           </div>
         </div>
-      </Element>
+      </section>
     </div>
   )
 }

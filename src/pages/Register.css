@@ -283,6 +283,24 @@
   background: white;
 }
 
+.demo-card-input {
+  text-align: center;
+}
+
+.demo-card-input p {
+  margin-bottom: 10px;
+  color: #666;
+}
+
+.demo-card-input input {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #f9f9f9;
+}
+
 .pay-button {
   background: #4CAF50;
   color: white;

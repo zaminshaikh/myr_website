@@ -1,15 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import './Register.css';
 
-// Initialize Stripe (you'll need to replace with your actual publishable key)
-const stripePromise = loadStripe('pk_test_51234567890abcdef...');
-
 const CheckoutForm = ({ registrationData, total, onSuccess }) => {
-  const stripe = useStripe();
-  const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -18,34 +11,10 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
     setLoading(true);
     setError(null);
 
-    if (!stripe || !elements) {
-      return;
-    }
-
-    const cardElement = elements.getElement(CardElement);
-
     try {
-      // Create payment method
-      const { error: paymentError, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-        billing_details: {
-          name: registrationData.parent.name,
-          email: registrationData.parent.email,
-          phone: registrationData.parent.phone,
-        },
-      });
-
-      if (paymentError) {
-        setError(paymentError.message);
-        setLoading(false);
-        return;
-      }
-
-      // Here you would typically send the payment method to your backend
-      // For now, we'll simulate a successful payment
-      console.log('Payment Method:', paymentMethod);
+      // Simulate payment processing
       console.log('Registration Data:', registrationData);
+      console.log('Total Amount:', total);
       
       // Simulate API call delay
       setTimeout(() => {
@@ -62,27 +31,23 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
   return (
     <form onSubmit={handleSubmit} className="checkout-form">
       <div className="card-element-container">
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: '16px',
-                color: '#424770',
-                '::placeholder': {
-                  color: '#aab7c4',
-                },
-              },
-            },
-          }}
-        />
+        <div className="demo-card-input">
+          <p><strong>Demo Payment Form</strong></p>
+          <p>This is a demonstration. In production, this would be replaced with Stripe Elements.</p>
+          <input type="text" placeholder="Card Number" disabled />
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input type="text" placeholder="MM/YY" disabled />
+            <input type="text" placeholder="CVC" disabled />
+          </div>
+        </div>
       </div>
       {error && <div className="error-message">{error}</div>}
       <button 
         type="submit" 
-        disabled={!stripe || loading}
+        disabled={loading}
         className="pay-button"
       >
-        {loading ? 'Processing...' : `Pay $${total}`}
+        {loading ? 'Processing...' : `Complete Registration - $${total}`}
       </button>
     </form>
   );
@@ -522,13 +487,11 @@ export default function Register() {
               </div>
             </div>
             
-            <Elements stripe={stripePromise}>
-              <CheckoutForm 
-                registrationData={{ parent, children, agreement }}
-                total={total}
-                onSuccess={handlePaymentSuccess}
-              />
-            </Elements>
+            <CheckoutForm 
+              registrationData={{ parent, children, agreement }}
+              total={total}
+              onSuccess={handlePaymentSuccess}
+            />
             
             <div className="form-actions">
               <button type="button" onClick={handleBack} className="back-btn">Back</button>
