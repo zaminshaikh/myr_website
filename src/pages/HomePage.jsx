@@ -243,16 +243,16 @@ const HomePage = () => {
           <h2>Facilitators</h2>
           <div className="facilitators-grid">
             <div className="facilitator">
-              <img src="/api/placeholder/200/200" alt="Aamel Unia" />
-              <h4>Aamel Unia</h4>
+              <img src="/shabbir-kirmani.png" alt="Shabbir Kirmani" />
+              <h4>Shabbir Kirmani</h4>
             </div>
             <div className="facilitator">
-              <img src="/api/placeholder/200/200" alt="Zahra Makki" />
-              <h4>Zahra Makki</h4>
-            </div>
-            <div className="facilitator">
-              <img src="/api/placeholder/200/200" alt="Hussein Charara" />
+              <img src="/hussein-charara.png" alt="Hussein Charara" />
               <h4>Hussein Charara</h4>
+            </div>
+            <div className="facilitator">
+              <img src="/mohammed-taher.png" alt="Mohammed Taher" />
+              <h4>Mohammed Taher</h4>
             </div>
           </div>
         </div>
