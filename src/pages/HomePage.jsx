@@ -11,8 +11,8 @@ const HomePage = () => {
   })
 
   useEffect(() => {
-    // Set target date to December 1st, 2025 (you can update this)
-    const targetDate = new Date('2025-12-01T16:30:00')
+    // Set target date to December 5th, 2025 (you can update this)
+    const targetDate = new Date('2025-12-05T16:30:00')
     
     const timer = setInterval(() => {
       const now = new Date().getTime()
@@ -69,7 +69,7 @@ const HomePage = () => {
               <div className="event-details">
                 <div className="event-when">
                   <h3>When</h3>
-                  <p>Dec 01, 2025, 4:00 PM – Dec 03, 2025, 4:00 PM</p>
+                  <p>Dec 05, 2025, 4:00 PM – Dec 07, 2025, 4:00 PM</p>
                 </div>
                 
                 <div className="event-where">
@@ -185,7 +185,7 @@ const HomePage = () => {
           <h2>Schedule</h2>
           
           <div className="schedule-day friday">
-            <h3>FRIDAY, DECEMBER 1ST</h3>
+            <h3>FRIDAY, DECEMBER 5TH</h3>
             <ul>
               <li>4:30 pm - Arrival</li>
               <li>5:30 pm - Welcoming Campers, Maghrib Prayers & Qur'an Reflection</li>
@@ -198,7 +198,7 @@ const HomePage = () => {
           </div>
 
           <div className="schedule-day saturday">
-            <h3>SATURDAY, DECEMBER 2ND</h3>
+            <h3>SATURDAY, DECEMBER 6TH</h3>
             <ul>
               <li>6:00 am - Wake-up and Adhan</li>
               <li>6:15 am - Fajr Prayers, Qur'an Reflection, and Meditation</li>
@@ -220,7 +220,7 @@ const HomePage = () => {
           </div>
 
           <div className="schedule-day sunday">
-            <h3>SUNDAY, DECEMBER 3RD</h3>
+            <h3>SUNDAY, DECEMBER 7TH</h3>
             <ul>
               <li>6:00 am - Wake-up and Adhan</li>
               <li>6:15 am - Fajr Prayers, Qur'an Reflection and Meditation</li>
