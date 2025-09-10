@@ -1,6 +1,6 @@
 # Muslim Youth Retreat Website
 
-A React.js website for the Muslim Youth Retreat 2023, featuring a comprehensive registration system with dynamic pricing.
+A React.js website for the Muslim Youth Retreat 2025, featuring a comprehensive registration system with dynamic pricing.
 
 ## Features
 

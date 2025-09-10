@@ -157,7 +157,7 @@ export default function Register() {
       <div className="register-container">
         <div className="success-message">
           <h2>Registration Successful!</h2>
-          <p>Thank you for registering for the Muslim Youth Retreat 2023.</p>
+          <p>Thank you for registering for the Muslim Youth Retreat 2025.</p>
           <p>You will receive a confirmation email shortly with all the details.</p>
           <Link to="/" className="back-home-btn">Back to Home</Link>
         </div>
@@ -169,7 +169,7 @@ export default function Register() {
     <div className="register-container">
       <div className="register-header">
         <Link to="/" className="back-link">← Back to Home</Link>
-        <h1>Register for Muslim Youth Retreat 2023</h1>
+        <h1>Register for Muslim Youth Retreat 2025</h1>
         <div className="progress-bar">
           <div className={`progress-step ${step >= 1 ? 'active' : ''}`}>1</div>
           <div className={`progress-step ${step >= 2 ? 'active' : ''}`}>2</div>

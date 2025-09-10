@@ -11,8 +11,8 @@ const HomePage = () => {
   })
 
   useEffect(() => {
-    // Set target date to December 1st, 2023 (you can update this)
-    const targetDate = new Date('2023-12-01T16:30:00')
+    // Set target date to December 1st, 2025 (you can update this)
+    const targetDate = new Date('2025-12-01T16:30:00')
     
     const timer = setInterval(() => {
       const now = new Date().getTime()
@@ -41,7 +41,7 @@ const HomePage = () => {
           <div className="nav-logo">
             <div className="logo-text">
               <span className="logo-main">MYR</span>
-              <span className="logo-sub">2023</span>
+              <span className="logo-sub">2025</span>
             </div>
           </div>
           <ul className="nav-menu">
@@ -64,12 +64,12 @@ const HomePage = () => {
               <div className="countdown-badge">
                 {timeLeft.days} DAYS TO THE EVENT
               </div>
-              <h1 className="hero-title">Muslim Youth Retreat 2023</h1>
+              <h1 className="hero-title">Muslim Youth Retreat 2025</h1>
               
               <div className="event-details">
                 <div className="event-when">
                   <h3>When</h3>
-                  <p>Dec 01, 2023, 4:00 PM – Dec 03, 2023, 4:00 PM</p>
+                  <p>Dec 01, 2025, 4:00 PM – Dec 03, 2025, 4:00 PM</p>
                 </div>
                 
                 <div className="event-where">
@@ -83,7 +83,7 @@ const HomePage = () => {
                 <Link to="/register" className="register-btn">Register Now</Link>
                 <div className="pricing-info">
                   <span className="price">Price: $225 Per Participant</span>
-                  <span className="deadline">Registration Deadline: November 17th</span>
+                  <span className="deadline">Registration Deadline: November 17th, 2025</span>
                 </div>
               </div>
             </div>
@@ -265,7 +265,7 @@ const HomePage = () => {
           <div className="faq-list">
             <div className="faq-item">
               <h4>What is the registration deadline?</h4>
-              <p><em>November 17th, 2023. All payments must be received by this date as we need to provide a full headcount for accommodations and catering.</em></p>
+              <p><em>November 17th, 2025. All payments must be received by this date as we need to provide a full headcount for accommodations and catering.</em></p>
             </div>
             
             <div className="faq-item">
