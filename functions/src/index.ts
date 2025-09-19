@@ -90,7 +90,14 @@ export const saveRegistration = onCall(async (request) => {
     const db = admin.firestore();
     const batch = db.batch();
 
-    // Create guardian document
+    // Generate participant IDs first
+    const participantIds: string[] = [];
+    for (let i = 0; i < registrationData.children.length; i++) {
+      const participantId = `PRT_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      participantIds.push(participantId);
+    }
+
+    // Create guardian document with participant references
     const guardianRef = db.collection("guardians").doc();
     const guardianDoc = {
       guardianId: `GRD_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
@@ -105,17 +112,18 @@ export const saveRegistration = onCall(async (request) => {
         zipCode: registrationData.parent.zipCode,
         country: registrationData.parent.country,
       },
+      participantIds: participantIds,
+      participantCount: registrationData.children.length,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
     batch.set(guardianRef, guardianDoc);
 
     // Create participant documents
-    const participantIds: string[] = [];
-    for (const child of registrationData.children) {
+    for (let i = 0; i < registrationData.children.length; i++) {
+      const child = registrationData.children[i];
       const participantRef = db.collection("participants").doc();
-      const participantId = `PRT_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      participantIds.push(participantId);
+      const participantId = participantIds[i];
       
       const participantDoc = {
         participantId,
@@ -169,21 +177,61 @@ export const saveRegistration = onCall(async (request) => {
   }
 });
 
-// Get all registrations (for admin portal)
+// Get all registrations with populated guardian and participant data (for admin portal)
 export const getRegistrations = onCall(async (request) => {
   try {
     // In a real app, you'd want to add authentication here
     // For now, we'll assume this is protected at the frontend level
 
-    const snapshot = await admin.firestore()
+    const db = admin.firestore();
+    const snapshot = await db
         .collection("registrations")
         .orderBy("createdAt", "desc")
         .get();
 
-    const registrations = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const registrations = [];
+
+    for (const doc of snapshot.docs) {
+      const registration: any = { id: doc.id, ...doc.data() };
+      
+      // Only fetch guardian data if guardianId exists and is not undefined
+      if (registration.guardianId) {
+        try {
+          const guardianSnapshot = await db
+              .collection("guardians")
+              .where("guardianId", "==", registration.guardianId)
+              .get();
+          
+          if (!guardianSnapshot.empty) {
+            registration.parent = guardianSnapshot.docs[0].data();
+          }
+        } catch (guardianError) {
+          logger.warn(`Failed to fetch guardian for registration ${registration.id}:`, guardianError);
+          registration.parent = null;
+        }
+      } else {
+        registration.parent = null;
+      }
+
+      // Only fetch participant data if registrationId exists and is not undefined
+      if (registration.registrationId) {
+        try {
+          const participantSnapshot = await db
+              .collection("participants")
+              .where("registrationId", "==", registration.registrationId)
+              .get();
+          
+          registration.children = participantSnapshot.docs.map(doc => doc.data());
+        } catch (participantError) {
+          logger.warn(`Failed to fetch participants for registration ${registration.id}:`, participantError);
+          registration.children = [];
+        }
+      } else {
+        registration.children = [];
+      }
+
+      registrations.push(registration);
+    }
 
     return {
       success: true,
@@ -192,6 +240,77 @@ export const getRegistrations = onCall(async (request) => {
   } catch (error) {
     logger.error("Error fetching registrations:", error);
     throw new Error("Failed to fetch registrations");
+  }
+});
+
+// Get all guardians (for admin portal)
+export const getGuardians = onCall(async (request) => {
+  try {
+    const snapshot = await admin.firestore()
+        .collection("guardians")
+        .orderBy("createdAt", "desc")
+        .get();
+
+    const guardians = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return {
+      success: true,
+      guardians,
+    };
+  } catch (error) {
+    logger.error("Error fetching guardians:", error);
+    throw new Error("Failed to fetch guardians");
+  }
+});
+
+// Get all participants (for admin portal)
+export const getParticipants = onCall(async (request) => {
+  try {
+    const db = admin.firestore();
+    const snapshot = await db
+        .collection("participants")
+        .orderBy("createdAt", "desc")
+        .get();
+
+    const participants = [];
+
+    for (const doc of snapshot.docs) {
+      const participant: any = { id: doc.id, ...doc.data() };
+      
+      // Only fetch guardian data if guardianId exists and is not undefined
+      if (participant.guardianId) {
+        try {
+          const guardianSnapshot = await db
+              .collection("guardians")
+              .where("guardianId", "==", participant.guardianId)
+              .get();
+          
+          if (!guardianSnapshot.empty) {
+            participant.guardian = guardianSnapshot.docs[0].data();
+          } else {
+            participant.guardian = null;
+          }
+        } catch (guardianError) {
+          logger.warn(`Failed to fetch guardian for participant ${participant.id}:`, guardianError);
+          participant.guardian = null;
+        }
+      } else {
+        participant.guardian = null;
+      }
+
+      participants.push(participant);
+    }
+
+    return {
+      success: true,
+      participants,
+    };
+  } catch (error) {
+    logger.error("Error fetching participants:", error);
+    throw new Error("Failed to fetch participants");
   }
 });
 

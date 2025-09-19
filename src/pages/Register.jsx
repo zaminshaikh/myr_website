@@ -273,8 +273,8 @@ export default function Register() {
         grade: '',
         dietary: '',
         medical: '',
-        emergencyContact: '',
-        emergencyPhone: ''
+        emergencyContact: parent.name || '',
+        emergencyPhone: parent.phone || ''
       },
     ]);
   };
@@ -288,6 +288,16 @@ export default function Register() {
   const total = children.length > 1 ? 250 * children.length : 275;
 
   const handleNext = () => {
+    // Auto-fill emergency contact fields when moving to step 2
+    if (step === 1) {
+      setChildren((prev) => 
+        prev.map(child => ({
+          ...child,
+          emergencyContact: child.emergencyContact || parent.name,
+          emergencyPhone: child.emergencyPhone || parent.phone
+        }))
+      );
+    }
     setStep(step + 1);
   };
 
@@ -561,7 +571,16 @@ export default function Register() {
 
         {step === 2 && (
           <div className="form-step">
-            <h2>Participant Information</h2>
+            <div className="step-header">
+              <h2>Participant Information</h2>
+              <button 
+                type="button" 
+                onClick={addChild} 
+                className="add-child-btn-top-right"
+              >
+                + Add Another Participant
+              </button>
+            </div>
             {children.map((child, idx) => (
               <div key={idx} className="child-form">
                 <div className="child-header">
@@ -651,7 +670,7 @@ export default function Register() {
                       required 
                       value={child.emergencyContact} 
                       onChange={e => handleChildChange(idx, 'emergencyContact', e.target.value)} 
-                      placeholder="Different from parent/guardian"
+                      placeholder="Auto-filled from parent/guardian info"
                     />
                   </div>
                   <div className="form-group">
@@ -674,13 +693,6 @@ export default function Register() {
                 </div>
               </div>
             ))}
-            <button 
-              type="button" 
-              onClick={addChild} 
-              className="add-child-btn"
-            >
-              + Add Another Participant
-            </button>
             <div className="form-actions">
               <button type="button" onClick={handleBack} className="back-btn">Back</button>
               <button 
