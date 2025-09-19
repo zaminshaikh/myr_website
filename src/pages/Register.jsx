@@ -24,8 +24,8 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
 
   const createPaymentIntent = async () => {
     try {
-      // Get the Firebase Functions URL - you'll need to update this with your actual project URL
-      const functionsUrl = import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || 'https://us-central1-your-project-id.cloudfunctions.net';
+      // Get the Firebase Functions URL
+      const functionsUrl = import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || 'https://us-central1-myr-website.cloudfunctions.net';
       
       const response = await fetch(`${functionsUrl}/createPaymentIntent`, {
         method: 'POST',

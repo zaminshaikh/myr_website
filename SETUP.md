@@ -67,7 +67,7 @@ This project now includes a complete backend integration with Firebase and Strip
 2. **Configure Frontend Environment** (`.env` in root):
    ```env
    # Stripe Configuration
-   VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
+   STRIPE_API_PUBLIC_KEY=pk_test_your_stripe_publishable_key_here
    
    # Firebase Configuration
    VITE_FIREBASE_API_KEY=your_firebase_api_key

@@ -1,6 +1,7 @@
 import {onRequest, onCall} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
+import { defineSecret } from "firebase-functions/params";
 const Stripe = require("stripe");
 const cors = require("cors");
 
@@ -9,17 +10,24 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_API_PRIVATE_KEY || "", {
-  apiVersion: "2024-12-18.acacia",
-});
+// Define Stripe secret key
+const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
+
+// Initialize Stripe (will be initialized in each function)
+const getStripe = () => {
+  return new Stripe(stripeSecretKey.value(), {
+    apiVersion: "2024-06-20",
+  });
+};
 
 // Initialize CORS
 const corsHandler = cors({origin: true});
 
 // Create payment intent
-export const createPaymentIntent = onRequest((req, res) => {
-  corsHandler(req, res, async () => {
+export const createPaymentIntent = onRequest(
+  { secrets: [stripeSecretKey] },
+  (req, res) => {
+    corsHandler(req, res, async () => {
     try {
       if (req.method !== "POST") {
         res.status(405).json({error: "Method not allowed"});
@@ -34,6 +42,9 @@ export const createPaymentIntent = onRequest((req, res) => {
       }
 
       // Create payment intent
+      logger.info("Initializing Stripe with secret key");
+      const stripe = getStripe();
+      logger.info("Stripe initialized, creating payment intent");
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount * 100, // Convert to cents
         currency: "usd",
@@ -42,8 +53,8 @@ export const createPaymentIntent = onRequest((req, res) => {
         },
         metadata: {
           registrationId: registrationData.registrationId || "",
-          parentName: registrationData.parent.name,
-          participantCount: registrationData.children.length.toString(),
+          parentName: registrationData.parent?.name || "",
+          participantCount: (registrationData.children?.length || 0).toString(),
         },
       });
 
@@ -55,8 +66,9 @@ export const createPaymentIntent = onRequest((req, res) => {
       logger.error("Error creating payment intent:", error);
       res.status(500).json({error: "Failed to create payment intent"});
     }
-  });
-});
+    });
+  }
+);
 
 // Save registration data
 export const saveRegistration = onCall(async (request) => {
@@ -128,7 +140,9 @@ export const getRegistrations = onCall(async (request) => {
 });
 
 // Confirm payment and update registration status
-export const confirmPayment = onCall(async (request) => {
+export const confirmPayment = onCall(
+  { secrets: [stripeSecretKey] },
+  async (request) => {
   try {
     const {paymentIntentId, registrationId} = request.data;
 
@@ -137,6 +151,7 @@ export const confirmPayment = onCall(async (request) => {
     }
 
     // Verify payment with Stripe
+    const stripe = getStripe();
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status === "succeeded") {
@@ -167,4 +182,5 @@ export const confirmPayment = onCall(async (request) => {
     logger.error("Error confirming payment:", error);
     throw new Error("Failed to confirm payment");
   }
-});
+  }
+);
