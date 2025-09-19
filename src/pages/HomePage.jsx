@@ -72,7 +72,7 @@ const HomePage = () => {
               <div className="event-details">
                 <div className="event-when">
                   <h3>When</h3>
-                  <p>Dec 05, 2025, 4:00 PM – Dec 07, 2025, 4:00 PM</p>
+                  <p>Friday, Dec 05, 2025, 4:30 PM – Sunday, Dec 07, 2025, 4:30 PM</p>
                 </div>
                 
                 <div className="event-where">
@@ -106,7 +106,7 @@ const HomePage = () => {
       {/* Leadership Section */}
       <section id="overview" className="leadership-section">
         <div className="container">
-          <h2>LEADERSHIP IN ACTION</h2>
+          <h2>An Epic Weekend Awaits</h2>
           <div className="leadership-content">
             <p>
               MYR in partnership with Wise Academy is pleased to present the 3rd bi-annual 
