@@ -276,7 +276,7 @@ const Admin = () => {
     switch (status) {
       case 'paid': return '#28a745';
       case 'pending': return '#ffc107';
-      case 'refunded': return '#dc3545';
+      case 'refunded': return '#6c757d';
       default: return '#6c757d';
     }
   };
@@ -510,7 +510,7 @@ const Admin = () => {
           className={`tab-button ${activeTab === 'saved' ? 'active' : ''}`}
           onClick={() => setActiveTab('saved')}
         >
-          Saved Registrations ({savedRegistrations.length})
+          Registrations In Progress ({savedRegistrations.length})
         </button>
       </div>
 
@@ -808,12 +808,17 @@ const Admin = () => {
                       </p>
                     </div>
                     <div className="saved-registration-status">
-                      <span className="status-badge incomplete-status">
-                        INCOMPLETE
+                      <span className={`status-badge ${saved.paymentError ? 'failed-status' : 'incomplete-status'}`}>
+                        {saved.paymentError ? 'PAYMENT FAILED' : 'INCOMPLETE'}
                       </span>
                       <div className="step-info">
                         Step {saved.step || 1} of 4
                       </div>
+                      {saved.total && (
+                        <div className="saved-registration-total">
+                          ${saved.total}
+                        </div>
+                      )}
                       <div className="saved-registration-actions">
                         <button
                           onClick={() => handleDeleteSaved(saved)}
@@ -865,6 +870,20 @@ const Admin = () => {
                         <div className={`step ${saved.step >= 3 ? 'completed' : ''}`}>3. Agreements</div>
                         <div className={`step ${saved.step >= 4 ? 'completed' : ''}`}>4. Payment</div>
                       </div>
+                      
+                      {saved.paymentError && (
+                        <div className="payment-error-section">
+                          <p><strong>Payment Error:</strong></p>
+                          <p className="error-message" style={{color: '#dc3545', backgroundColor: '#f8d7da', padding: '8px', borderRadius: '4px', border: '1px solid #f5c6cb'}}>
+                            {saved.paymentError}
+                          </p>
+                          {saved.paymentAttemptedAt && (
+                            <p className="error-timestamp" style={{fontSize: '0.9em', color: '#6c757d'}}>
+                              Payment attempted: {formatDate(saved.paymentAttemptedAt)}
+                            </p>
+                          )}
+                        </div>
+                      )}
                       {saved.agreement && Object.values(saved.agreement).some(val => val) && (
                         <div>
                           <p><strong>Agreements Status:</strong></p>

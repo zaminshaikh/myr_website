@@ -14,6 +14,7 @@ if (!admin.apps.length) {
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const stripeTestSecretKey = defineSecret("STRIPE_TEST_SECRET_KEY");
 
+
 // Initialize Stripe (will be initialized in each function)
 const getStripe = (testMode = false) => {
   const apiKey = testMode ? stripeTestSecretKey.value() : stripeSecretKey.value();
@@ -84,10 +85,13 @@ export const saveRegistration = onCall(async (request) => {
       throw new Error("Registration data is required");
     }
 
-    // Generate a unique registration ID
-    const registrationId = `REG_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-
     const db = admin.firestore();
+    
+    // Generate a unique registration ID (only called when payment succeeds)
+    const registrationId = `REG_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const registrationRef = db.collection("registrations").doc();
+    
+    logger.info(`Creating new registration: ${registrationId}`);
     const batch = db.batch();
 
     // Generate participant IDs first
@@ -147,19 +151,21 @@ export const saveRegistration = onCall(async (request) => {
       batch.set(participantRef, participantDoc);
     }
 
-    // Create main registration document
-    const registrationRef = db.collection("registrations").doc();
+    // Create or update main registration document
     const registrationDoc = {
       registrationId,
       paymentIntentId: paymentIntentId || null,
       guardianId: guardianDoc.guardianId,
       participantIds,
       participantCount: registrationData.children.length,
+      parent: registrationData.parent,
+      children: registrationData.children,
       agreement: registrationData.agreement,
       total: registrationData.total,
       status: paymentIntentId ? "paid" : "pending",
+      step: 4, // Payment step
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
     batch.set(registrationRef, registrationDoc);
 
@@ -533,13 +539,20 @@ export const saveRegistrationProgress = onCall(async (request) => {
       logger.info(`Creating new saved registration: ${savedRegistrationId}`);
     }
 
+    // Calculate estimated total based on children count
+    const estimatedTotal = progressData.total || (progressData.children?.length > 1 ? 250 * progressData.children.length : 275);
+
     const savedRegistrationDoc = {
       savedRegistrationId,
       step: progressData.step || 1,
       parent: progressData.parent || {},
       children: progressData.children || [],
       agreement: progressData.agreement || {},
+      total: estimatedTotal,
+      participantCount: progressData.children?.length || 0,
       status: "incomplete",
+      paymentError: progressData.paymentError || null,
+      paymentAttemptedAt: progressData.paymentAttemptedAt || null,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       lastAccessedAt: admin.firestore.FieldValue.serverTimestamp(),
       ...(isUpdate ? {} : { createdAt: admin.firestore.FieldValue.serverTimestamp() })
@@ -671,6 +684,7 @@ export const deleteSavedRegistrationByEmail = onCall(async (request) => {
     throw new Error(`Failed to delete saved registrations: ${error.message}`);
   }
 });
+
 
 // Delete registration and all related documents
 export const deleteRegistration = onCall(async (request) => {

@@ -693,6 +693,12 @@
   font-weight: bold;
 }
 
+.failed-status {
+  background: #dc3545 !important;
+  color: white;
+  font-weight: bold;
+}
+
 .step-info {
   font-size: 14px;
   color: #6c5700;

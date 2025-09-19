@@ -92,22 +92,7 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
     setError(null);
 
     try {
-      // First save the registration data
-      const saveRegistration = httpsCallable(functions, 'saveRegistration');
-      const registrationResult = await saveRegistration({
-        registrationData: {
-          ...registrationData,
-          total: total
-        }
-      });
-
-      if (!registrationResult.data.success) {
-        throw new Error('Failed to save registration');
-      }
-
-      const registrationId = registrationResult.data.registrationId;
-
-      // Confirm payment with Stripe
+      // Confirm payment with Stripe first
       const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: elements.getElement(CardElement),
@@ -128,12 +113,44 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
       });
 
       if (stripeError) {
+        // Save payment error to savedRegistrations
+        try {
+          const saveRegistrationProgress = httpsCallable(functions, 'saveRegistrationProgress');
+          await saveRegistrationProgress({
+            progressData: {
+              ...registrationData,
+              total: total,
+              step: 4,
+              paymentError: stripeError.message,
+              paymentAttemptedAt: new Date().toISOString()
+            }
+          });
+        } catch (saveError) {
+          console.error('Error saving payment error:', saveError);
+        }
+        
         setError(stripeError.message);
         setLoading(false);
         return;
       }
 
       if (paymentIntent.status === 'succeeded') {
+        // Now create the full registration with successful payment
+        const saveRegistration = httpsCallable(functions, 'saveRegistration');
+        const registrationResult = await saveRegistration({
+          registrationData: {
+            ...registrationData,
+            total: total
+          },
+          paymentIntentId: paymentIntent.id
+        });
+
+        if (!registrationResult.data.success) {
+          throw new Error('Failed to save registration');
+        }
+
+        const registrationId = registrationResult.data.registrationId;
+
         // Confirm payment in our backend
         const confirmPayment = httpsCallable(functions, 'confirmPayment');
         await confirmPayment({
