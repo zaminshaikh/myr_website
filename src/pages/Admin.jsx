@@ -4,6 +4,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import DevModeToggle from '../components/DevModeToggle';
+import { FaUser, FaSync, FaSignOutAlt, FaArrowLeft } from 'react-icons/fa';
 import './Admin.css';
 
 const Admin = () => {
@@ -108,14 +109,14 @@ const Admin = () => {
     <div className="admin-container">
       <div className="admin-header">
         <div className="admin-nav">
-          <Link to="/" className="back-link">← Back to Home</Link>
+          <Link to="/" className="back-link"><FaArrowLeft /> Back to Home</Link>
           <h1>Admin Portal - MYR 2025 Registrations</h1>
           <div className="admin-controls-right">
             <div className="user-info">
-              <span className="user-email">👤 {currentUser?.email}</span>
+              <span className="user-email"><FaUser /> {currentUser?.email}</span>
             </div>
-            <button onClick={fetchRegistrations} className="refresh-btn">🔄 Refresh</button>
-            <button onClick={handleLogout} className="logout-btn">🚪 Logout</button>
+            <button onClick={fetchRegistrations} className="refresh-btn"><FaSync /> Refresh</button>
+            <button onClick={handleLogout} className="logout-btn"><FaSignOutAlt /> Logout</button>
           </div>
         </div>
         

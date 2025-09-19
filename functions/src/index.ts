@@ -87,30 +87,81 @@ export const saveRegistration = onCall(async (request) => {
     // Generate a unique registration ID
     const registrationId = `REG_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
-    // Prepare the registration document
+    const db = admin.firestore();
+    const batch = db.batch();
+
+    // Create guardian document
+    const guardianRef = db.collection("guardians").doc();
+    const guardianDoc = {
+      guardianId: `GRD_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      name: registrationData.parent.name,
+      email: registrationData.parent.email,
+      phone: registrationData.parent.phone,
+      address: {
+        street: registrationData.parent.address,
+        apartment: registrationData.parent.apartment || "",
+        city: registrationData.parent.city,
+        state: registrationData.parent.state,
+        zipCode: registrationData.parent.zipCode,
+        country: registrationData.parent.country,
+      },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    batch.set(guardianRef, guardianDoc);
+
+    // Create participant documents
+    const participantIds: string[] = [];
+    for (const child of registrationData.children) {
+      const participantRef = db.collection("participants").doc();
+      const participantId = `PRT_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      participantIds.push(participantId);
+      
+      const participantDoc = {
+        participantId,
+        registrationId,
+        guardianId: guardianDoc.guardianId,
+        name: child.name,
+        age: parseInt(child.age),
+        gender: child.gender,
+        grade: child.grade,
+        dietary: child.dietary || "",
+        medical: child.medical || "",
+        emergencyContact: {
+          name: child.emergencyContact,
+          phone: child.emergencyPhone,
+        },
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      batch.set(participantRef, participantDoc);
+    }
+
+    // Create main registration document
+    const registrationRef = db.collection("registrations").doc();
     const registrationDoc = {
       registrationId,
       paymentIntentId: paymentIntentId || null,
-      parent: registrationData.parent,
-      children: registrationData.children,
+      guardianId: guardianDoc.guardianId,
+      participantIds,
+      participantCount: registrationData.children.length,
       agreement: registrationData.agreement,
       total: registrationData.total,
       status: paymentIntentId ? "paid" : "pending",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
+    batch.set(registrationRef, registrationDoc);
 
-    // Save to Firestore
-    const docRef = await admin.firestore()
-        .collection("registrations")
-        .add(registrationDoc);
+    // Commit the batch
+    await batch.commit();
 
-    logger.info(`Registration saved with ID: ${docRef.id}`);
+    logger.info(`Registration saved with ID: ${registrationId}`);
 
     return {
       success: true,
       registrationId,
-      docId: docRef.id,
+      docId: registrationRef.id,
     };
   } catch (error) {
     logger.error("Error saving registration:", error);

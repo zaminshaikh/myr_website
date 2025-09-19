@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #557CBA 0%, #4A6BA8 100%);
   padding: 20px;
 }
 
@@ -23,21 +23,20 @@
 }
 
 .login-header .back-link {
-  position: absolute;
-  top: -10px;
-  left: 0;
-  color: #EEB541;
-  text-decoration: none;
-  font-weight: 600;
-  display: flex;
+  position: static;
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  transition: color 0.3s ease;
+  color: #557CBA;
+  text-decoration: none;
+  font-weight: 600;
   font-size: 14px;
+  margin-bottom: 20px;
+  transition: color 0.3s ease;
 }
 
 .login-header .back-link:hover {
-  color: #D4A43A;
+  color: #4A6BA8;
 }
 
 .login-header h1 {
@@ -82,9 +81,9 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #557CBA;
   background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(85, 124, 186, 0.1);
 }
 
 .form-group input:disabled {
@@ -104,7 +103,7 @@
 }
 
 .login-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #557CBA 0%, #4A6BA8 100%);
   color: white;
   border: none;
   padding: 15px;
@@ -114,11 +113,12 @@
   cursor: pointer;
   transition: all 0.3s ease;
   margin-top: 10px;
+  box-shadow: 0 4px 15px rgba(85, 124, 186, 0.3);
 }
 
 .login-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 25px rgba(85, 124, 186, 0.4);
 }
 
 .login-btn:disabled {
