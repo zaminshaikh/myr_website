@@ -48,9 +48,9 @@ export const createPaymentIntent = onRequest(
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount * 100, // Convert to cents
         currency: "usd",
-        automatic_payment_methods: {
-          enabled: true,
-        },
+        // Disable automatic payment methods to avoid HTTPS security warnings in development
+        // automatic_payment_methods: { enabled: true },
+        payment_method_types: ['card'], // Explicitly allow card payments
         metadata: {
           registrationId: registrationData.registrationId || "",
           parentName: registrationData.parent?.name || "",

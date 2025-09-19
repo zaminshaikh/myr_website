@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
 import './Admin.css';
 
 const Admin = () => {
@@ -11,6 +12,8 @@ const Admin = () => {
   const [selectedRegistration, setSelectedRegistration] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const { currentUser, signout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchRegistrations();
@@ -72,6 +75,17 @@ const Admin = () => {
     }
   };
 
+  const handleLogout = async () => {
+    if (window.confirm('Are you sure you want to log out?')) {
+      try {
+        await signout();
+        navigate('/');
+      } catch (error) {
+        console.error('Error logging out:', error);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-container">
@@ -95,7 +109,13 @@ const Admin = () => {
         <div className="admin-nav">
           <Link to="/" className="back-link">← Back to Home</Link>
           <h1>Admin Portal - MYR 2025 Registrations</h1>
-          <button onClick={fetchRegistrations} className="refresh-btn">🔄 Refresh</button>
+          <div className="admin-controls-right">
+            <div className="user-info">
+              <span className="user-email">👤 {currentUser?.email}</span>
+            </div>
+            <button onClick={fetchRegistrations} className="refresh-btn">🔄 Refresh</button>
+            <button onClick={handleLogout} className="logout-btn">🚪 Logout</button>
+          </div>
         </div>
         
         <div className="admin-stats">
