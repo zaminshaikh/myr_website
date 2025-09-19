@@ -135,6 +135,22 @@
   letter-spacing: -0.02em;
 }
 
+/* Step header for layouts with top-right buttons */
+.step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.step-header h2 {
+  margin-bottom: 0;
+  text-align: left;
+  flex: 1;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -256,6 +272,27 @@
 .add-child-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 40px rgba(85, 124, 186, 0.4);
+}
+
+/* Top-right positioned add participant button */
+.add-child-btn-top-right {
+  background: linear-gradient(135deg, #557CBA 0%, #4A6BA8 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.add-child-btn-top-right:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
 }
 
 /* Modern Agreement Styles */
@@ -385,31 +422,41 @@
   background: #f8fafc;
 }
 
-.demo-card-input {
-  text-align: center;
+.card-element-container {
+  margin: 20px 0;
 }
 
-.demo-card-input p {
-  margin-bottom: 16px;
-  color: #6b7280;
+.card-element-container label {
+  display: block;
+  margin-bottom: 10px;
   font-weight: 500;
-}
-
-.demo-card-input p:first-child {
-  color: #1f2937;
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.demo-card-input input {
-  width: 100%;
-  padding: 16px;
-  margin: 8px 0;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  background: #f9fafb;
+  color: #333;
   font-size: 16px;
-  color: #9ca3af;
+}
+
+.StripeElement {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  transition: border-color 0.2s ease;
+}
+
+.StripeElement:focus,
+.StripeElement--focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.StripeElement--invalid {
+  border-color: #dc3545;
+}
+
+.payment-security {
+  text-align: center;
+  margin-top: 15px;
+  color: #666;
+  font-size: 14px;
 }
 
 .pay-button {
@@ -437,6 +484,33 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.pay-button.test-mode {
+  background: linear-gradient(135deg, #ff8c00 0%, #ff6b35 100%) !important;
+  border: 2px solid #ff4500;
+}
+
+.pay-button.test-mode:hover:not(:disabled) {
+  box-shadow: 0 8px 25px rgba(255, 140, 0, 0.4);
+}
+
+.test-mode-banner {
+  background: linear-gradient(135deg, #ff8c00 0%, #ff6b35 100%);
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 20px;
+  border: 2px solid #ff4500;
+  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); }
+  50% { box-shadow: 0 4px 25px rgba(255, 140, 0, 0.6); }
+  100% { box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); }
 }
 
 .error-message {
@@ -609,6 +683,22 @@
   
   .child-form {
     padding: 24px 20px;
+  }
+  
+  .step-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .step-header h2 {
+    text-align: center;
+    width: 100%;
+  }
+  
+  .add-child-btn-top-right {
+    align-self: center;
+    width: auto;
   }
   
   .form-actions {

@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './HomePage.css'
+import myrLogo from '../assets/myr-logo-2025.png'
+import cabinBackground from '../assets/cabin-background.jpg'
+import shabbirKirmani from '../assets/shabbir-kirmani.png'
+import husseinCharara from '../assets/hussein-charara.png'
+import mohammedTaher from '../assets/mohammed-taher.png'
+import saharJaber from '../assets/sahar-jaber.png'
+import wiseAcademyLogo from '../assets/wise-academy-logo.png'
 
 const HomePage = () => {
   const [timeLeft, setTimeLeft] = useState({
@@ -40,7 +47,7 @@ const HomePage = () => {
       <nav className="navbar">
         <div className="nav-container">
           <div className="nav-logo">
-            <img src="/myr-logo-2025.png" alt="MYR 2025 Logo" className="logo-image" />
+            <img src={myrLogo} alt="MYR 2025 Logo" className="logo-image" />
           </div>
           <ul className="nav-menu">
             <li><a href="#home">Home</a></li>
@@ -59,7 +66,7 @@ const HomePage = () => {
       {/* Hero Section */}
       <section id="home" className="hero-section">
         <div className="hero-background">
-          <img src="/cabin-background.jpg" alt="Youth Camp Cabins" />
+          <img src={cabinBackground} alt="Youth Camp Cabins" />
           <div className="hero-overlay">
             <div className="hero-content">
               <div className="countdown-badge">
@@ -242,19 +249,19 @@ const HomePage = () => {
           <h2>Facilitators</h2>
           <div className="facilitators-grid">
             <div className="facilitator">
-              <img src="/shabbir-kirmani.png" alt="Shabbir Kirmani" />
+              <img src={shabbirKirmani} alt="Shabbir Kirmani" />
               <h4>Shabbir Kirmani</h4>
             </div>
             <div className="facilitator">
-              <img src="/hussein-charara.png" alt="Hussein Charara" />
+              <img src={husseinCharara} alt="Hussein Charara" />
               <h4>Hussein Charara</h4>
             </div>
             <div className="facilitator">
-              <img src="/mohammed-taher.png" alt="Mohammed Taher" />
+              <img src={mohammedTaher} alt="Mohammed Taher" />
               <h4>Mohammed Taher</h4>
             </div>
             <div className="facilitator">
-              <img src="/sahar-jaber.png" alt="Sahar Jaber" />
+              <img src={saharJaber} alt="Sahar Jaber" />
               <h4>Sahar Jaber</h4>
             </div>
           </div>
@@ -356,7 +363,7 @@ const HomePage = () => {
         <div className="container">
           <h2>Hosted By</h2>
           <div className="partner-logo">
-            <img src="/wise-academy-logo.png" alt="Wise Academy Logo" />
+            <img src={wiseAcademyLogo} alt="Wise Academy Logo" />
           </div>
         </div>
       </section>
@@ -412,6 +419,14 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="footer">
+        <div className="container">
+          <p>&copy; 2025 Muslim Youth Retreat. All rights reserved.</p>
+          <Link to="/admin" className="admin-link">Admin</Link>
+        </div>
+      </footer>
     </div>
   )
 }

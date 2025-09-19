@@ -1,55 +1,197 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import InputMask from 'react-input-mask';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import DevModeToggle from '../components/DevModeToggle';
 import './Register.css';
 
+// Load Stripe with dynamic key based on test mode
+const getStripeKey = () => {
+  const testMode = localStorage.getItem('stripe-test-mode') === 'true';
+  return testMode 
+    ? import.meta.env.VITE_STRIPE_TEST_PUBLISHABLE_KEY 
+    : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+};
+
+let stripePromise = loadStripe(getStripeKey());
+
 const CheckoutForm = ({ registrationData, total, onSuccess }) => {
+  const stripe = useStripe();
+  const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [clientSecret, setClientSecret] = useState('');
+  const [testMode, setTestMode] = useState(false);
+
+  useEffect(() => {
+    // Check test mode from localStorage
+    const isTestMode = localStorage.getItem('stripe-test-mode') === 'true';
+    setTestMode(isTestMode);
+    
+    // Create payment intent when component mounts
+    createPaymentIntent();
+    
+    // Listen for test mode changes
+    const handleModeChange = (event) => {
+      const newTestMode = event.detail.testMode;
+      setTestMode(newTestMode);
+      // Reload Stripe with new key
+      stripePromise = loadStripe(getStripeKey());
+      // Recreate payment intent
+      createPaymentIntent();
+    };
+    
+    window.addEventListener('stripe-mode-changed', handleModeChange);
+    return () => window.removeEventListener('stripe-mode-changed', handleModeChange);
+  }, []);
+
+  const createPaymentIntent = async () => {
+    try {
+      // Get the Firebase Functions URL
+      const functionsUrl = import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || 'https://us-central1-myr-website.cloudfunctions.net';
+      
+      const currentTestMode = localStorage.getItem('stripe-test-mode') === 'true';
+      
+      const response = await fetch(`${functionsUrl}/createPaymentIntent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: total,
+          registrationData: registrationData,
+          testMode: currentTestMode
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
+      } else {
+        setError('Failed to initialize payment');
+      }
+    } catch (err) {
+      console.error('Error creating payment intent:', err);
+      setError('Failed to initialize payment');
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    
+    if (!stripe || !elements || !clientSecret) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Simulate payment processing
-      console.log('Registration Data:', registrationData);
-      console.log('Total Amount:', total);
-      
-      // Simulate API call delay
-      setTimeout(() => {
+      // First save the registration data
+      const saveRegistration = httpsCallable(functions, 'saveRegistration');
+      const registrationResult = await saveRegistration({
+        registrationData: {
+          ...registrationData,
+          total: total
+        }
+      });
+
+      if (!registrationResult.data.success) {
+        throw new Error('Failed to save registration');
+      }
+
+      const registrationId = registrationResult.data.registrationId;
+
+      // Confirm payment with Stripe
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: elements.getElement(CardElement),
+          billing_details: {
+            name: registrationData.parent.name,
+            email: registrationData.parent.email,
+            phone: registrationData.parent.phone,
+            address: {
+              line1: registrationData.parent.address,
+              line2: registrationData.parent.apartment,
+              city: registrationData.parent.city,
+              state: registrationData.parent.state,
+              postal_code: registrationData.parent.zipCode,
+              country: registrationData.parent.country,
+            },
+          },
+        },
+      });
+
+      if (stripeError) {
+        setError(stripeError.message);
         setLoading(false);
-        onSuccess();
-      }, 2000);
+        return;
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        // Confirm payment in our backend
+        const confirmPayment = httpsCallable(functions, 'confirmPayment');
+        await confirmPayment({
+          paymentIntentId: paymentIntent.id,
+          registrationId: registrationId,
+          testMode: testMode
+        });
+
+        onSuccess(registrationId);
+      }
 
     } catch (err) {
-      setError(err.message);
+      console.error('Payment error:', err);
+      setError(err.message || 'An error occurred during payment');
       setLoading(false);
     }
+  };
+
+  const cardElementOptions = {
+    style: {
+      base: {
+        fontSize: '16px',
+        color: '#424770',
+        '::placeholder': {
+          color: '#aab7c4',
+        },
+      },
+      invalid: {
+        color: '#9e2146',
+      },
+    },
   };
 
   return (
     <form onSubmit={handleSubmit} className="checkout-form">
       <div className="card-element-container">
-        <div className="demo-card-input">
-          <p><strong>Demo Payment Form</strong></p>
-          <p>This is a demonstration. In production, this would be replaced with Stripe Elements.</p>
-          <input type="text" placeholder="Card Number" disabled />
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <input type="text" placeholder="MM/YY" disabled />
-            <input type="text" placeholder="CVC" disabled />
-          </div>
-        </div>
+        <label htmlFor="card-element">
+          Credit or debit card
+        </label>
+        <CardElement
+          id="card-element"
+          options={cardElementOptions}
+        />
       </div>
+      
       {error && <div className="error-message">{error}</div>}
+      
       <button 
         type="submit" 
-        disabled={loading}
-        className="pay-button"
+        disabled={!stripe || loading || !clientSecret}
+        className={`pay-button ${testMode ? 'test-mode' : ''}`}
       >
-        {loading ? 'Processing...' : `Complete Registration - $${total}`}
+        {loading ? 'Processing...' : `${testMode ? '🧪 TEST: ' : ''}Complete Registration - $${total}`}
       </button>
+      
+      <div className="payment-security">
+        <p>🔒 Your payment information is secure and encrypted</p>
+      </div>
     </form>
   );
 };
@@ -87,6 +229,8 @@ export default function Register() {
     conduct: false
   });
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [registrationId, setRegistrationId] = useState('');
+  const [testMode, setTestMode] = useState(false);
 
   const handleChildChange = (idx, field, value) => {
     setChildren((prev) => {
@@ -129,8 +273,8 @@ export default function Register() {
         grade: '',
         dietary: '',
         medical: '',
-        emergencyContact: '',
-        emergencyPhone: ''
+        emergencyContact: parent.name || '',
+        emergencyPhone: parent.phone || ''
       },
     ]);
   };
@@ -144,6 +288,16 @@ export default function Register() {
   const total = children.length > 1 ? 250 * children.length : 275;
 
   const handleNext = () => {
+    // Auto-fill emergency contact fields when moving to step 2
+    if (step === 1) {
+      setChildren((prev) => 
+        prev.map(child => ({
+          ...child,
+          emergencyContact: child.emergencyContact || parent.name,
+          emergencyPhone: child.emergencyPhone || parent.phone
+        }))
+      );
+    }
     setStep(step + 1);
   };
 
@@ -151,9 +305,28 @@ export default function Register() {
     setStep(step - 1);
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (regId) => {
+    setRegistrationId(regId);
     setPaymentSuccess(true);
   };
+
+  // Check test mode on component mount and listen for changes
+  React.useEffect(() => {
+    const checkTestMode = () => {
+      const isTestMode = localStorage.getItem('stripe-test-mode') === 'true';
+      setTestMode(isTestMode);
+    };
+    
+    checkTestMode();
+    
+    // Listen for test mode changes
+    const handleModeChange = (event) => {
+      setTestMode(event.detail.testMode);
+    };
+    
+    window.addEventListener('stripe-mode-changed', handleModeChange);
+    return () => window.removeEventListener('stripe-mode-changed', handleModeChange);
+  }, []);
 
   const isStep1Valid = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -228,6 +401,7 @@ export default function Register() {
         <div className="success-message">
           <h2>Registration Successful!</h2>
           <p>Thank you for registering for the Muslim Youth Retreat 2025.</p>
+          <p><strong>Registration ID:</strong> {registrationId}</p>
           <p>You will receive a confirmation email shortly with all the details.</p>
           <Link to="/" className="back-home-btn">Back to Home</Link>
         </div>
@@ -397,7 +571,16 @@ export default function Register() {
 
         {step === 2 && (
           <div className="form-step">
-            <h2>Participant Information</h2>
+            <div className="step-header">
+              <h2>Participant Information</h2>
+              <button 
+                type="button" 
+                onClick={addChild} 
+                className="add-child-btn-top-right"
+              >
+                + Add Another Participant
+              </button>
+            </div>
             {children.map((child, idx) => (
               <div key={idx} className="child-form">
                 <div className="child-header">
@@ -487,7 +670,7 @@ export default function Register() {
                       required 
                       value={child.emergencyContact} 
                       onChange={e => handleChildChange(idx, 'emergencyContact', e.target.value)} 
-                      placeholder="Different from parent/guardian"
+                      placeholder="Auto-filled from parent/guardian info"
                     />
                   </div>
                   <div className="form-group">
@@ -510,13 +693,6 @@ export default function Register() {
                 </div>
               </div>
             ))}
-            <button 
-              type="button" 
-              onClick={addChild} 
-              className="add-child-btn"
-            >
-              + Add Another Participant
-            </button>
             <div className="form-actions">
               <button type="button" onClick={handleBack} className="back-btn">Back</button>
               <button 
@@ -615,6 +791,14 @@ export default function Register() {
         {step === 4 && (
           <div className="form-step">
             <h2>Payment Information</h2>
+            {testMode && (
+              <div className="test-mode-banner">
+                🧪 <strong>TEST MODE ACTIVE</strong> - No real charges will be made
+                <div style={{fontSize: '12px', marginTop: '5px'}}>
+                  Use test card: 4242 4242 4242 4242
+                </div>
+              </div>
+            )}
             <div className="payment-summary">
               <h3>Order Summary</h3>
               <div className="summary-details">
@@ -630,28 +814,21 @@ export default function Register() {
               </div>
             </div>
             
-            <CheckoutForm 
-              registrationData={{ parent, children, agreement }}
-              total={total}
-              onSuccess={handlePaymentSuccess}
-            />
+            <Elements stripe={stripePromise}>
+              <CheckoutForm 
+                registrationData={{ parent, children, agreement }}
+                total={total}
+                onSuccess={handlePaymentSuccess}
+              />
+            </Elements>
             
             <div className="form-actions">
               <button type="button" onClick={handleBack} className="back-btn">Back</button>
             </div>
-            
-            <div className="payment-note">
-              <p><strong>Note:</strong> This is a demo implementation. In production, you would need to:</p>
-              <ul>
-                <li>Replace the Stripe publishable key with your actual key</li>
-                <li>Set up a backend server to handle payment processing</li>
-                <li>Implement proper error handling and validation</li>
-                <li>Store registration data securely</li>
-              </ul>
-            </div>
           </div>
         )}
       </div>
+      <DevModeToggle />
     </div>
   );
 }
