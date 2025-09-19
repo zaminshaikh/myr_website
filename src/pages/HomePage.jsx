@@ -63,7 +63,9 @@ const HomePage = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Main Content */}
+      <main className="main-content">
+        {/* Hero Section */}
       <section id="home" className="hero-section">
         <div className="hero-background">
           <img src={cabinBackground} alt="Youth Camp Cabins" />
@@ -419,6 +421,7 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="footer">
