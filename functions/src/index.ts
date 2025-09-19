@@ -45,7 +45,7 @@ export const createPaymentIntent = onRequest(
 
       // Create payment intent
       const useTestMode = testMode === true;
-      logger.info(`Initializing Stripe with ${useTestMode ? 'test' : 'live'} secret key`);
+      logger.info(`Initializing Stripe with ${useTestMode ? 'test' : 'live'} secret key - testMode flag: ${testMode}`);
       const stripe = getStripe(useTestMode);
       logger.info("Stripe initialized, creating payment intent");
       const paymentIntent = await stripe.paymentIntents.create({
