@@ -39,10 +39,7 @@ const HomePage = () => {
       <nav className="navbar">
         <div className="nav-container">
           <div className="nav-logo">
-            <div className="logo-text">
-              <span className="logo-main">MYR</span>
-              <span className="logo-sub">2025</span>
-            </div>
+            <img src="/myr-logo-2025.png" alt="MYR 2025 Logo" className="logo-image" />
           </div>
           <ul className="nav-menu">
             <li><a href="#home">Home</a></li>
@@ -265,6 +262,10 @@ const HomePage = () => {
             <div className="facilitator">
               <img src="/mohammed-taher.png" alt="Mohammed Taher" />
               <h4>Mohammed Taher</h4>
+            </div>
+            <div className="facilitator">
+              <img src="/sahar-jaber.png" alt="Sahar Jaber" />
+              <h4>Sahar Jaber</h4>
             </div>
           </div>
         </div>

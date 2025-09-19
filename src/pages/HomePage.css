@@ -50,26 +50,10 @@ body {
   padding: 0 24px;
 }
 
-.nav-logo .logo-text {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.logo-main {
-  font-size: 28px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.02em;
-}
-
-.logo-sub {
-  font-size: 16px;
-  font-weight: 600;
-  color: #6b7280;
+.nav-logo .logo-image {
+  height: 80px;
+  width: auto;
+  display: block;
 }
 
 .nav-menu {
