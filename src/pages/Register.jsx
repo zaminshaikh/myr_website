@@ -228,6 +228,7 @@ export default function Register() {
   });
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [registrationId, setRegistrationId] = useState('');
+  const [testMode, setTestMode] = useState(false);
 
   const handleChildChange = (idx, field, value) => {
     setChildren((prev) => {
@@ -296,6 +297,24 @@ export default function Register() {
     setRegistrationId(regId);
     setPaymentSuccess(true);
   };
+
+  // Check test mode on component mount and listen for changes
+  React.useEffect(() => {
+    const checkTestMode = () => {
+      const isTestMode = localStorage.getItem('stripe-test-mode') === 'true';
+      setTestMode(isTestMode);
+    };
+    
+    checkTestMode();
+    
+    // Listen for test mode changes
+    const handleModeChange = (event) => {
+      setTestMode(event.detail.testMode);
+    };
+    
+    window.addEventListener('stripe-mode-changed', handleModeChange);
+    return () => window.removeEventListener('stripe-mode-changed', handleModeChange);
+  }, []);
 
   const isStep1Valid = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
