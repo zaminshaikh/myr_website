@@ -118,7 +118,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  margin-top: 0;
+  padding-top: 1000px;
 }
 
 .hero-background {
@@ -690,6 +690,7 @@ body {
   font-weight: 600;
   color: #374151;
   font-size: 14px;
+  text-align: left;
 }
 
 .form-group input,
@@ -701,6 +702,7 @@ body {
   font-size: 16px;
   transition: all 0.3s ease;
   font-family: inherit;
+  text-align: left;
 }
 
 .form-group input:focus,
@@ -744,6 +746,10 @@ body {
   .nav-register-btn {
     padding: 10px 20px;
     font-size: 13px;
+  }
+  
+  .hero-section {
+    padding-top: 120px;
   }
   
   .hero-title {

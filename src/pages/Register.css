@@ -36,7 +36,7 @@
 }
 
 .back-link {
-  color: #10b981;
+  color: #EEB541;
   text-decoration: none;
   font-weight: 600;
   display: inline-flex;
@@ -51,7 +51,7 @@
 }
 
 .back-link:hover {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(238, 181, 65, 0.15);
   transform: translateX(-2px);
 }
 
@@ -92,9 +92,9 @@
 }
 
 .progress-step.active {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%);
   color: white;
-  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 32px rgba(238, 181, 65, 0.3);
   transform: scale(1.1);
 }
 
@@ -111,7 +111,7 @@
 }
 
 .progress-step.active:not(:last-child)::after {
-  background: #10b981;
+  background: #EEB541;
 }
 
 /* Modern Form Styles */
@@ -176,8 +176,8 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  border-color: #EEB541;
+  box-shadow: 0 0 0 3px rgba(238, 181, 65, 0.1);
   transform: translateY(-1px);
 }
 
@@ -211,7 +211,7 @@
 }
 
 .child-header h3 {
-  color: #10b981;
+  color: #EEB541;
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
@@ -237,7 +237,7 @@
 }
 
 .add-child-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #557CBA 0%, #4A6BA8 100%);
   color: white;
   border: none;
   padding: 16px 32px;
@@ -291,7 +291,7 @@
   margin-top: 4px;
   transform: scale(1.3);
   cursor: pointer;
-  accent-color: #10b981;
+  accent-color: #EEB541;
 }
 
 /* Modern Pricing Summary */
@@ -304,7 +304,7 @@
 }
 
 .pricing-summary h3 {
-  color: #1d4ed8;
+  color: #557CBA;
   margin-bottom: 20px;
   font-size: 1.5rem;
   font-weight: 700;
@@ -317,7 +317,7 @@
 }
 
 .discount-note {
-  color: #10b981;
+  color: #EEB541;
   font-weight: 700;
   font-size: 16px;
 }
@@ -327,7 +327,7 @@
   padding-top: 16px;
   margin-top: 20px;
   font-size: 1.5rem;
-  color: #1d4ed8;
+  color: #557CBA;
 }
 
 /* Modern Payment Summary */
@@ -413,7 +413,7 @@
 }
 
 .pay-button {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%);
   color: white;
   border: none;
   padding: 20px 40px;
@@ -423,7 +423,7 @@
   font-weight: 700;
   width: 100%;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 32px rgba(238, 181, 65, 0.3);
   letter-spacing: -0.01em;
 }
 
@@ -483,9 +483,9 @@
 }
 
 .next-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%);
   color: white;
-  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 32px rgba(238, 181, 65, 0.3);
 }
 
 .next-btn:hover:not(:disabled) {
@@ -513,7 +513,7 @@
 }
 
 .success-message h2 {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -532,7 +532,7 @@
 
 .back-home-btn {
   display: inline-block;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%);
   color: white;
   padding: 20px 40px;
   border-radius: 12px;
@@ -541,13 +541,13 @@
   margin-top: 32px;
   transition: all 0.3s ease;
   font-size: 16px;
-  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 32px rgba(238, 181, 65, 0.3);
   letter-spacing: -0.01em;
 }
 
 .back-home-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 12px 40px rgba(238, 181, 65, 0.4);
 }
 
 /* Modern Payment Note */
