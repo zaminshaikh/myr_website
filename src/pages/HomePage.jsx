@@ -10,6 +10,7 @@ const HomePage = () => {
     seconds: 0
   })
 
+
   useEffect(() => {
     // Set target date to December 5th, 2025 (you can update this)
     const targetDate = new Date('2025-12-05T16:30:00')
@@ -69,7 +70,7 @@ const HomePage = () => {
               <div className="event-details">
                 <div className="event-when">
                   <h3>When</h3>
-                  <p>Dec 05, 2025, 4:00 PM – Dec 07, 2025, 4:00 PM</p>
+                  <p>Friday Dec 05, 2025, 4:00 PM – Sunday Dec 07, 2025, 4:00 PM</p>
                 </div>
                 
                 <div className="event-where">
@@ -103,17 +104,10 @@ const HomePage = () => {
       {/* Leadership Section */}
       <section id="overview" className="leadership-section">
         <div className="container">
-          <h2>LEADERSHIP IN ACTION</h2>
+          <h2>AN EPIC WEEKEND AWAITS</h2>
           <div className="leadership-content">
             <p>
-              MYR in partnership with Wise Academy is pleased to present the 3rd bi-annual 
-              leadership opportunity for Muslim Boys and Girls in grades 6 to 12, to increase 
-              their leadership capacity and skills over an epic weekend experience.
-            </p>
-            <p>
-              A retreat catered for young Muslims to help them understand their identity, be 
-              confident in who they are, and build lasting bonds with like-minded individuals; 
-              all while having a blast!
+              Wise Academy proudly presents the 4th Bi-Annual Youth Retreat for Muslim boys and girls in grades 6–12. Join us for a weekend of growth, fun, and inspiration! Through engaging activities, the retreat helps young Muslims strengthen their identity, grow in confidence, and build lifelong friendships, all in a positive and faith-filled environment.
             </p>
           </div>
         </div>
@@ -137,9 +131,9 @@ const HomePage = () => {
       <section className="target-section">
         <div className="container">
           <div className="target-card">
-            <h3>This program is for teenagers who:</h3>
+            <h3>This program is for middle school and high school students who:</h3>
             <ul>
-              <li>Are interested in excelling in life as leaders in the making</li>
+              <li>Aspire to grow into confident leaders rooted in Islamic values</li>
               <li>Want to have an enjoyable experience with friends, doing fun outdoor activities</li>
               <li>Want to increase their self confidence in an encouraging, positive environment</li>
               <li>Are interested in increasing their inner capacity to be comfortable as themselves and having the confidence to act according to what they know is right</li>
@@ -158,7 +152,7 @@ const HomePage = () => {
               <li>Increased self-esteem and confidence in order to be who they are meant to be</li>
               <li>Improved interpersonal communication and people skills</li>
               <li>Consciousness of how great leaders think and act</li>
-              <li>A deeper connection to nature with increased wilderness survival skills</li>
+              <li>A deeper connection to nature that strengthens appreciation for God's creation.</li>
               <li>Great friendships and bonds with others who will be allies for years to come</li>
             </ul>
           </div>
@@ -171,18 +165,16 @@ const HomePage = () => {
           <div className="importance-card">
             <h3>Why is this important?</h3>
             <p>
-              Working with youth has shown time and again that the youth face the great challenge of a fear of 
-              <strong> REJECTION</strong> everyday. It is as if the cause of all other fears: Failure, Being Left Behind, Judgement, 
-              Loss of Health, Loss of Funds are all rooted in the <strong>FEAR OF REJECTION</strong>. This is why being around 
-              the right kinds of people is extremely important.
+              Working with youth has shown that one of their greatest challenges is understanding their own <strong>IDENTITY</strong> and <strong>PURPOSE</strong>. Without this, fears take hold such as not belonging, being misunderstood, or falling short. At the root of these fears is the desire for acceptance.
             </p>
             <p>
-              <strong>STRENGTH OF CHARACTER</strong> and <strong>IDENTITY</strong> make the difference between making the right or wrong 
-              choices in early life.
+              This is why <strong>EMPATHY</strong> and connection are so important. When youth are surrounded by people who see and value them, they gain courage to grow into who they are meant to be.
             </p>
             <p>
-              By enrolling, you are improving the chances for increased positivity and movement in the right 
-              direction, especially during these challenging technological times.
+              Strength of character, grounded in <strong>IDENTITY</strong> and <strong>PURPOSE</strong>, helps young people make choices that reflect their best selves.
+            </p>
+            <p>
+              By enrolling, you create opportunities for youth to be guided with <strong>EMPATHY</strong>, to strengthen their sense of self, and to move with clarity and confidence in today's world.
             </p>
           </div>
         </div>
@@ -194,29 +186,28 @@ const HomePage = () => {
           <h2>Schedule</h2>
           
           <div className="schedule-day friday">
-            <h3>FRIDAY, DECEMBER 5TH</h3>
+            <h3>FRIDAY 12/5</h3>
             <ul>
               <li>4:30 pm - Arrival</li>
               <li>5:30 pm - Welcoming Campers, Maghrib Prayers & Qur'an Reflection</li>
               <li>6:15 pm - Cabin Assignments and Meet & Greet</li>
               <li>7:30 pm - Dinner</li>
-              <li>8:15 pm - Interactive Session 1: Facilitator Introduction</li>
+              <li>8:15 pm - Facilitator Introductions</li>
               <li>10:00 pm - Gym Free Time</li>
               <li>11:00 pm - Lights Out</li>
             </ul>
           </div>
 
           <div className="schedule-day saturday">
-            <h3>SATURDAY, DECEMBER 6TH</h3>
+            <h3>SATURDAY 12/6</h3>
             <ul>
               <li>6:00 am - Wake-up and Adhan</li>
               <li>6:15 am - Fajr Prayers, Qur'an Reflection, and Meditation</li>
-              <li>6:45 am - Prepare for the day</li>
-              <li>7:15 am - Breakfast</li>
-              <li>8:30 am - Interactive Session 2: Archery and Canoeing</li>
+              <li>8:45 am - Breakfast</li>
+              <li>9:45 am - Interactive Facilitator Activities</li>
               <li>12:30 pm - Dhuhr Prayers & Qur'an Reflection</li>
               <li>1:00 pm - Lunch</li>
-              <li>1:30 pm - Ropes Course, Interactive Session 3</li>
+              <li>1:30 pm - Interactive Facilitator Activities</li>
               <li>5:30 pm - Maghrib Prayers Setup</li>
               <li>5:45 pm - Maghrib Prayers & Qur'an Reflection</li>
               <li>6:15 pm - Dinner</li>
@@ -229,13 +220,12 @@ const HomePage = () => {
           </div>
 
           <div className="schedule-day sunday">
-            <h3>SUNDAY, DECEMBER 7TH</h3>
+            <h3>SUNDAY 12/7</h3>
             <ul>
               <li>6:00 am - Wake-up and Adhan</li>
               <li>6:15 am - Fajr Prayers, Qur'an Reflection and Meditation</li>
-              <li>6:45 am - Prepare for the day</li>
-              <li>7:15 am - Breakfast</li>
-              <li>8:30 am - Interactive Session 4: Canoeing, Gym and Open Fields</li>
+              <li>8:45 am - Breakfast</li>
+              <li>9:45 am - Interactive Facilitator Activities (canoeing, archery, ropes course)</li>
               <li>12:30 pm - Dhuhr Prayers & Qur'an Reflection</li>
               <li>1:15 pm - Lunch</li>
               <li>2:15 pm - Cabin Cleanup</li>
@@ -277,7 +267,7 @@ const HomePage = () => {
           <h2>Frequently Asked Questions</h2>
           <div className="faq-list">
             <div className="faq-item">
-              <h4>What is the registration deadline?</h4>
+              <h4>When is the registration deadline?</h4>
               <p><em>November 17th, 2025. All payments must be received by this date as we need to provide a full headcount for accommodations and catering.</em></p>
             </div>
             
@@ -323,7 +313,7 @@ const HomePage = () => {
             
             <div className="faq-item">
               <h4>How can I help as a sponsor?</h4>
-              <p><em>If you would like to help a child have an opportunity to attend camp please contact one of the organizers below and your sponsorship will be handled in full confidence. To protect the privacy of the child you will not be notified which child you have helped. However rest assured your sponsorship will guarantee a child's placement for camp or it will go towards the payment of essential fees (transportation, food, activities,...etc.)</em></p>
+              <p><em>If you would like to help a child have an opportunity to attend camp please email us at info@muslimyouthretreat.org and your sponsorship will be handled in full confidence. To protect the privacy of the child you will not be notified which child you have helped. However rest assured your sponsorship will guarantee a child's placement for camp or it will go towards the payment of essential fees (transportation, food, activities,...etc.)</em></p>
             </div>
             
             <div className="faq-item">
@@ -364,7 +354,7 @@ const HomePage = () => {
       {/* Partnership Section */}
       <section className="partnership-section">
         <div className="container">
-          <h2>In Partnership With</h2>
+          <h2>Hosted By</h2>
           <div className="partner-logo">
             <img src="/wise-academy-logo.png" alt="Wise Academy Logo" />
           </div>
@@ -377,7 +367,7 @@ const HomePage = () => {
           <h2>Directions</h2>
           <div className="map-container">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3478.123456789!2d-81.123456789!3d28.123456789!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sFlorida%20Elks%20Youth%20Camp!5e0!3m2!1sen!2sus!4v1234567890"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3477.123456789!2d-81.65530000000001!3d28.929500000000002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88e7a1c4c4c4c4c4%3A0x1234567890abcdef!2sFlorida%20Elks%20Youth%20Camp%2C%2024175%20SE%20Hwy%20450%2C%20Umatilla%2C%20FL%2032784%2C%20USA!5e0!3m2!1sen!2sus!4v1640000000000"
               width="100%"
               height="400"
               style={{ border: 0 }}
@@ -393,10 +383,32 @@ const HomePage = () => {
       {/* Contact Section */}
       <section id="contact" className="contact-section">
         <div className="container">
-          <h2>Contact Information</h2>
-          <p>For additional information, please reach out to:</p>
-          <div className="contact-info">
-            <p><strong>Kamran Datoo - 407-408-1048</strong></p>
+          <h2>Contact Us</h2>
+          <p>Have questions? Send us a message and we'll get back to you soon!</p>
+          <div className="contact-form-container">
+            <form className="contact-form" action="mailto:info@muslimyouthretreat.org" method="post" encType="text/plain">
+              <div className="form-group">
+                <label htmlFor="name">Name</label>
+                <input type="text" id="name" name="name" required />
+              </div>
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input type="email" id="email" name="email" required />
+              </div>
+              <div className="form-group">
+                <label htmlFor="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" />
+              </div>
+              <div className="form-group">
+                <label htmlFor="subject">Subject</label>
+                <input type="text" id="subject" name="subject" required />
+              </div>
+              <div className="form-group">
+                <label htmlFor="message">Message</label>
+                <textarea id="message" name="message" rows="5" required></textarea>
+              </div>
+              <button type="submit" className="contact-submit-btn">Send Message</button>
+            </form>
           </div>
         </div>
       </section>
