@@ -62,6 +62,10 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setLoading(false);
+    }, (error) => {
+      console.error('Auth state change error:', error);
+      setError('Authentication initialization failed. Please check your internet connection.');
+      setLoading(false);
     });
 
     return unsubscribe; // Cleanup subscription on unmount
@@ -77,9 +81,41 @@ export const AuthProvider = ({ children }) => {
     loading
   };
 
+  // Show loading screen while initializing
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '20px'
+      }}>
+        <div style={{ fontSize: '18px', color: '#666' }}>
+          🔐 Initializing Authentication...
+        </div>
+        <div style={{ 
+          width: '40px', 
+          height: '40px', 
+          border: '3px solid #f0f0f0', 
+          borderTop: '3px solid #667eea', 
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}></div>
+        <style jsx>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
