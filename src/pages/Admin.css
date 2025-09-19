@@ -58,14 +58,23 @@
 }
 
 .back-link {
-  color: #007bff;
+  color: #EEB541;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: rgba(238, 181, 65, 0.1);
+  transition: all 0.3s ease;
+  font-size: 15px;
 }
 
 .back-link:hover {
-  color: #0056b3;
+  background: rgba(238, 181, 65, 0.15);
+  transform: translateX(-2px);
 }
 
 .admin-nav h1 {
