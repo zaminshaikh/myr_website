@@ -10,12 +10,14 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-// Define Stripe secret key
+// Define Stripe secret keys
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
+const stripeTestSecretKey = defineSecret("STRIPE_TEST_SECRET_KEY");
 
 // Initialize Stripe (will be initialized in each function)
-const getStripe = () => {
-  return new Stripe(stripeSecretKey.value(), {
+const getStripe = (testMode = false) => {
+  const apiKey = testMode ? stripeTestSecretKey.value() : stripeSecretKey.value();
+  return new Stripe(apiKey, {
     apiVersion: "2024-06-20",
   });
 };
@@ -25,7 +27,7 @@ const corsHandler = cors({origin: true});
 
 // Create payment intent
 export const createPaymentIntent = onRequest(
-  { secrets: [stripeSecretKey] },
+  { secrets: [stripeSecretKey, stripeTestSecretKey] },
   (req, res) => {
     corsHandler(req, res, async () => {
     try {
@@ -34,7 +36,7 @@ export const createPaymentIntent = onRequest(
         return;
       }
 
-      const {amount, registrationData} = req.body;
+      const {amount, registrationData, testMode} = req.body;
 
       if (!amount || !registrationData) {
         res.status(400).json({error: "Missing required fields"});
@@ -42,8 +44,9 @@ export const createPaymentIntent = onRequest(
       }
 
       // Create payment intent
-      logger.info("Initializing Stripe with secret key");
-      const stripe = getStripe();
+      const useTestMode = testMode === true;
+      logger.info(`Initializing Stripe with ${useTestMode ? 'test' : 'live'} secret key`);
+      const stripe = getStripe(useTestMode);
       logger.info("Stripe initialized, creating payment intent");
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount * 100, // Convert to cents
@@ -55,12 +58,14 @@ export const createPaymentIntent = onRequest(
           registrationId: registrationData.registrationId || "",
           parentName: registrationData.parent?.name || "",
           participantCount: (registrationData.children?.length || 0).toString(),
+          testMode: useTestMode ? "true" : "false",
         },
       });
 
       res.json({
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
+        testMode: useTestMode,
       });
     } catch (error) {
       logger.error("Error creating payment intent:", error);
@@ -141,17 +146,20 @@ export const getRegistrations = onCall(async (request) => {
 
 // Confirm payment and update registration status
 export const confirmPayment = onCall(
-  { secrets: [stripeSecretKey] },
+  { secrets: [stripeSecretKey, stripeTestSecretKey] },
   async (request) => {
   try {
-    const {paymentIntentId, registrationId} = request.data;
+    const {paymentIntentId, registrationId, testMode} = request.data;
 
     if (!paymentIntentId) {
       throw new Error("Payment intent ID is required");
     }
 
+    // Determine test mode from payment intent ID or explicit flag
+    const useTestMode = testMode === true || paymentIntentId.includes('test');
+
     // Verify payment with Stripe
-    const stripe = getStripe();
+    const stripe = getStripe(useTestMode);
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status === "succeeded") {

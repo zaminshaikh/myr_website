@@ -449,6 +449,33 @@
   box-shadow: none;
 }
 
+.pay-button.test-mode {
+  background: linear-gradient(135deg, #ff8c00 0%, #ff6b35 100%) !important;
+  border: 2px solid #ff4500;
+}
+
+.pay-button.test-mode:hover:not(:disabled) {
+  box-shadow: 0 8px 25px rgba(255, 140, 0, 0.4);
+}
+
+.test-mode-banner {
+  background: linear-gradient(135deg, #ff8c00 0%, #ff6b35 100%);
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 20px;
+  border: 2px solid #ff4500;
+  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); }
+  50% { box-shadow: 0 4px 25px rgba(255, 140, 0, 0.6); }
+  100% { box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3); }
+}
+
 .error-message {
   color: #ef4444;
   background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);

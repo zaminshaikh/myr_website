@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
+import DevModeToggle from '../components/DevModeToggle';
 import './Admin.css';
 
 const Admin = () => {
@@ -241,6 +242,7 @@ const Admin = () => {
           ))
         )}
       </div>
+      <DevModeToggle />
     </div>
   );
 };

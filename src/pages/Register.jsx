@@ -7,8 +7,15 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
 import './Register.css';
 
-// Load Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+// Load Stripe with dynamic key based on test mode
+const getStripeKey = () => {
+  const testMode = localStorage.getItem('stripe-test-mode') === 'true';
+  return testMode 
+    ? import.meta.env.VITE_STRIPE_TEST_PUBLISHABLE_KEY 
+    : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+};
+
+let stripePromise = loadStripe(getStripeKey());
 
 const CheckoutForm = ({ registrationData, total, onSuccess }) => {
   const stripe = useStripe();
@@ -16,16 +23,36 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
+  const [testMode, setTestMode] = useState(false);
 
   useEffect(() => {
+    // Check test mode from localStorage
+    const isTestMode = localStorage.getItem('stripe-test-mode') === 'true';
+    setTestMode(isTestMode);
+    
     // Create payment intent when component mounts
     createPaymentIntent();
+    
+    // Listen for test mode changes
+    const handleModeChange = (event) => {
+      const newTestMode = event.detail.testMode;
+      setTestMode(newTestMode);
+      // Reload Stripe with new key
+      stripePromise = loadStripe(getStripeKey());
+      // Recreate payment intent
+      createPaymentIntent();
+    };
+    
+    window.addEventListener('stripe-mode-changed', handleModeChange);
+    return () => window.removeEventListener('stripe-mode-changed', handleModeChange);
   }, []);
 
   const createPaymentIntent = async () => {
     try {
       // Get the Firebase Functions URL
       const functionsUrl = import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || 'https://us-central1-myr-website.cloudfunctions.net';
+      
+      const currentTestMode = localStorage.getItem('stripe-test-mode') === 'true';
       
       const response = await fetch(`${functionsUrl}/createPaymentIntent`, {
         method: 'POST',
@@ -34,7 +61,8 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
         },
         body: JSON.stringify({
           amount: total,
-          registrationData: registrationData
+          registrationData: registrationData,
+          testMode: currentTestMode
         }),
       });
 
@@ -108,7 +136,8 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
         const confirmPayment = httpsCallable(functions, 'confirmPayment');
         await confirmPayment({
           paymentIntentId: paymentIntent.id,
-          registrationId: registrationId
+          registrationId: registrationId,
+          testMode: testMode
         });
 
         onSuccess(registrationId);
@@ -153,9 +182,9 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
       <button 
         type="submit" 
         disabled={!stripe || loading || !clientSecret}
-        className="pay-button"
+        className={`pay-button ${testMode ? 'test-mode' : ''}`}
       >
-        {loading ? 'Processing...' : `Complete Registration - $${total}`}
+        {loading ? 'Processing...' : `${testMode ? '🧪 TEST: ' : ''}Complete Registration - $${total}`}
       </button>
       
       <div className="payment-security">
@@ -729,6 +758,14 @@ export default function Register() {
         {step === 4 && (
           <div className="form-step">
             <h2>Payment Information</h2>
+            {testMode && (
+              <div className="test-mode-banner">
+                🧪 <strong>TEST MODE ACTIVE</strong> - No real charges will be made
+                <div style={{fontSize: '12px', marginTop: '5px'}}>
+                  Use test card: 4242 4242 4242 4242
+                </div>
+              </div>
+            )}
             <div className="payment-summary">
               <h3>Order Summary</h3>
               <div className="summary-details">
