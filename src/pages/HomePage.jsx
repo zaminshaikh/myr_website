@@ -195,7 +195,7 @@ const HomePage = () => {
           <h2>Schedule</h2>
           
           <div className="schedule-day friday">
-            <h3>FRIDAY 12/5</h3>
+            <h3>FRIDAY - DECEMBER 5TH</h3>
             <ul>
               <li>4:30 pm - Arrival</li>
               <li>5:30 pm - Welcoming Campers, Maghrib Prayers & Qur'an Reflection</li>
@@ -208,7 +208,7 @@ const HomePage = () => {
           </div>
 
           <div className="schedule-day saturday">
-            <h3>SATURDAY 12/6</h3>
+            <h3>SATURDAY - DECEMBER 6TH</h3>
             <ul>
               <li>6:00 am - Wake-up and Adhan</li>
               <li>6:15 am - Fajr Prayers, Qur'an Reflection, and Meditation</li>
@@ -229,7 +229,7 @@ const HomePage = () => {
           </div>
 
           <div className="schedule-day sunday">
-            <h3>SUNDAY 12/7</h3>
+            <h3>SUNDAY - DECEMBER 7TH</h3>
             <ul>
               <li>6:00 am - Wake-up and Adhan</li>
               <li>6:15 am - Fajr Prayers, Qur'an Reflection and Meditation</li>
