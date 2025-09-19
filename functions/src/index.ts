@@ -1,11 +1,13 @@
 import {onRequest, onCall} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
-import Stripe from "stripe";
-import * as cors from "cors";
+const Stripe = require("stripe");
+const cors = require("cors");
 
 // Initialize Firebase Admin
-admin.initializeApp();
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_API_PRIVATE_KEY || "", {
