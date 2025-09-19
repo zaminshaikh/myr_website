@@ -365,7 +365,9 @@ const HomePage = () => {
         <div className="container">
           <h2>Hosted By</h2>
           <div className="partner-logo">
+~            <a href="https://wiseorlando.org" target="_blank" rel="noopener noreferrer">
             <img src={wiseAcademyLogo} alt="Wise Academy Logo" />
+          </a>
           </div>
         </div>
       </section>
