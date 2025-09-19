@@ -183,6 +183,7 @@ body {
   border-radius: 50px;
   font-weight: 600;
   font-size: 14px;
+  margin-top: 80px;
   margin-bottom: 32px;
   display: inline-block;
   box-shadow: 0 4px 20px rgba(238, 181, 65, 0.4);
@@ -425,7 +426,7 @@ body {
   font-size: 17px;
   line-height: 1.8;
   margin-bottom: 24px;
-  text-align: left;
+  text-align: center;
   max-width: 700px;
   margin-left: auto;
   margin-right: auto;
@@ -552,6 +553,126 @@ body {
   font-weight: 600;
   color: #1f2937;
   letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.facilitator-title {
+  font-size: 1rem;
+  color: #EEB541;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.click-hint {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-style: italic;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.facilitator:hover .click-hint {
+  opacity: 1;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  color: #6b7280;
+}
+
+.modal-close:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.modal-header img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border: 3px solid #ffffff;
+}
+
+.modal-info h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.modal-info h4 {
+  font-size: 1.2rem;
+  color: #EEB541;
+  font-weight: 500;
+}
+
+.modal-bio p {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: #4b5563;
 }
 
 /* Modern FAQ Section */
@@ -672,18 +793,78 @@ body {
 
 .contact-section p {
   font-size: 18px;
-  margin-bottom: 24px;
+  margin-bottom: 48px;
   color: #6b7280;
 }
 
-.contact-info p {
-  font-size: 1.5rem;
+.contact-form-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.contact-form {
+  background: #f8fafc;
+  padding: 48px 40px;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f1f5f9;
+  text-align: left;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
   font-weight: 600;
-  color: #1f2937;
+  color: #374151;
+  font-size: 15px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 16px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #EEB541;
+  box-shadow: 0 0 0 3px rgba(238, 181, 65, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.submit-btn {
   background: linear-gradient(135deg, #EEB541 0%, #EEB541 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: white;
+  padding: 16px 32px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  box-shadow: 0 4px 16px rgba(238, 181, 65, 0.3);
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(238, 181, 65, 0.4);
 }
 
 /* Responsive Design */
