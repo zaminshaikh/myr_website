@@ -489,6 +489,189 @@ export const refundPayment = onCall(
   }
 );
 
+// Save registration progress (for incomplete registrations)
+export const saveRegistrationProgress = onCall(async (request) => {
+  try {
+    const { progressData } = request.data;
+
+    if (!progressData) {
+      throw new Error("Progress data is required");
+    }
+
+    const db = admin.firestore();
+    
+    // Use email as unique identifier to prevent duplicates
+    const userEmail = progressData.parent?.email;
+    if (!userEmail) {
+      throw new Error("Parent email is required for saving progress");
+    }
+
+    // Check if there's already a saved registration for this email
+    const existingQuery = await db
+        .collection("savedRegistrations")
+        .where("parent.email", "==", userEmail)
+        .where("status", "==", "incomplete")
+        .get();
+
+    let savedRegistrationRef;
+    let savedRegistrationId;
+    let isUpdate = false;
+
+    if (!existingQuery.empty) {
+      // Update existing saved registration
+      savedRegistrationRef = existingQuery.docs[0].ref;
+      const existingData = existingQuery.docs[0].data();
+      savedRegistrationId = existingData.savedRegistrationId;
+      isUpdate = true;
+      
+      logger.info(`Updating existing saved registration: ${savedRegistrationId}`);
+    } else {
+      // Create new saved registration
+      savedRegistrationRef = db.collection("savedRegistrations").doc();
+      savedRegistrationId = `SAVED_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      
+      logger.info(`Creating new saved registration: ${savedRegistrationId}`);
+    }
+
+    const savedRegistrationDoc = {
+      savedRegistrationId,
+      step: progressData.step || 1,
+      parent: progressData.parent || {},
+      children: progressData.children || [],
+      agreement: progressData.agreement || {},
+      status: "incomplete",
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastAccessedAt: admin.firestore.FieldValue.serverTimestamp(),
+      ...(isUpdate ? {} : { createdAt: admin.firestore.FieldValue.serverTimestamp() })
+    };
+
+    await savedRegistrationRef.set(savedRegistrationDoc, { merge: isUpdate });
+
+    logger.info(`Registration progress ${isUpdate ? 'updated' : 'saved'} with ID: ${savedRegistrationId}`);
+
+    return {
+      success: true,
+      savedRegistrationId,
+      docId: savedRegistrationRef.id,
+      isUpdate,
+    };
+  } catch (error) {
+    logger.error("Error saving registration progress:", error);
+    throw new Error("Failed to save registration progress");
+  }
+});
+
+// Get all saved registrations (for admin portal)
+export const getSavedRegistrations = onCall(async (request) => {
+  try {
+    const db = admin.firestore();
+    const snapshot = await db
+        .collection("savedRegistrations")
+        .where("status", "==", "incomplete")
+        .orderBy("updatedAt", "desc")
+        .get();
+
+    const savedRegistrations = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return {
+      success: true,
+      savedRegistrations,
+    };
+  } catch (error) {
+    logger.error("Error fetching saved registrations:", error);
+    throw new Error("Failed to fetch saved registrations");
+  }
+});
+
+// Delete saved registration progress
+export const deleteSavedRegistration = onCall(async (request) => {
+  try {
+    const { savedRegistrationId } = request.data;
+
+    if (!savedRegistrationId) {
+      throw new Error("Saved registration ID is required");
+    }
+
+    const db = admin.firestore();
+    
+    // Find and delete the saved registration document
+    const query = db
+        .collection("savedRegistrations")
+        .where("savedRegistrationId", "==", savedRegistrationId);
+
+    const snapshot = await query.get();
+
+    if (snapshot.empty) {
+      throw new Error("Saved registration not found");
+    }
+
+    const doc = snapshot.docs[0];
+    await doc.ref.delete();
+
+    logger.info(`Saved registration deleted: ${savedRegistrationId}`);
+
+    return {
+      success: true,
+      message: "Saved registration deleted successfully",
+    };
+  } catch (error: any) {
+    logger.error("Error deleting saved registration:", error);
+    throw new Error(`Failed to delete saved registration: ${error.message}`);
+  }
+});
+
+// Delete saved registration progress by email (for start fresh functionality)
+export const deleteSavedRegistrationByEmail = onCall(async (request) => {
+  try {
+    const { email } = request.data;
+
+    if (!email) {
+      throw new Error("Email is required");
+    }
+
+    const db = admin.firestore();
+    
+    // Find all saved registrations for this email
+    const query = db
+        .collection("savedRegistrations")
+        .where("parent.email", "==", email)
+        .where("status", "==", "incomplete");
+
+    const snapshot = await query.get();
+
+    if (snapshot.empty) {
+      logger.info(`No saved registrations found for email: ${email}`);
+      return {
+        success: true,
+        message: "No saved registrations found for this email",
+        deletedCount: 0,
+      };
+    }
+
+    // Delete all found documents using batch
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+
+    logger.info(`Deleted ${snapshot.size} saved registrations for email: ${email}`);
+
+    return {
+      success: true,
+      message: "Saved registrations deleted successfully",
+      deletedCount: snapshot.size,
+    };
+  } catch (error: any) {
+    logger.error("Error deleting saved registrations by email:", error);
+    throw new Error(`Failed to delete saved registrations: ${error.message}`);
+  }
+});
+
 // Delete registration and all related documents
 export const deleteRegistration = onCall(async (request) => {
   logger.info("Delete registration function called", { data: request.data });

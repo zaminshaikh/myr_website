@@ -12,6 +12,7 @@ const Admin = () => {
   const [registrations, setRegistrations] = useState([]);
   const [guardians, setGuardians] = useState([]);
   const [participants, setParticipants] = useState([]);
+  const [savedRegistrations, setSavedRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,7 +32,8 @@ const Admin = () => {
       await Promise.all([
         fetchRegistrations(),
         fetchGuardians(), 
-        fetchParticipants()
+        fetchParticipants(),
+        fetchSavedRegistrations()
       ]);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -74,6 +76,17 @@ const Admin = () => {
     }
   };
 
+  const fetchSavedRegistrations = async () => {
+    const getSavedRegistrations = httpsCallable(functions, 'getSavedRegistrations');
+    const result = await getSavedRegistrations();
+    
+    if (result.data.success) {
+      setSavedRegistrations(result.data.savedRegistrations);
+    } else {
+      throw new Error('Failed to fetch saved registrations');
+    }
+  };
+
   // Filter functions for each data type
   const filteredRegistrations = registrations.filter(registration => {
     const matchesSearch = 
@@ -112,6 +125,18 @@ const Admin = () => {
            (participantActiveFilter === 'inactive' && participant.active === false);
     
     return matchesSearch && matchesActiveFilter;
+  });
+
+  const filteredSavedRegistrations = savedRegistrations.filter(saved => {
+    const matchesSearch = 
+      saved.parent?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      saved.parent?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      saved.savedRegistrationId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      saved.children?.some(child => 
+        child.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    
+    return matchesSearch;
   });
 
   const formatDate = (timestamp) => {
@@ -345,6 +370,39 @@ const Admin = () => {
     }
   };
 
+  const handleDeleteSaved = async (savedRegistration) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete this saved registration?\n\n` +
+      `Guardian: ${savedRegistration.parent?.name || 'N/A'}\n` +
+      `Email: ${savedRegistration.parent?.email || 'N/A'}\n` +
+      `Participants: ${savedRegistration.children?.length || 0}\n` +
+      `Step: ${savedRegistration.step || 1}\n\n` +
+      `This will remove the saved progress data.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+      const deleteSavedRegistration = httpsCallable(functions, 'deleteSavedRegistration');
+      const result = await deleteSavedRegistration({
+        savedRegistrationId: savedRegistration.savedRegistrationId
+      });
+
+      if (result.data.success) {
+        alert('Saved registration deleted successfully!');
+        await fetchAllData(); // Refresh data
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (error) {
+      console.error('Error deleting saved registration:', error);
+      alert(`Failed to delete saved registration: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-container">
@@ -371,6 +429,8 @@ const Admin = () => {
         return filteredGuardians;
       case 'participants':
         return filteredParticipants;
+      case 'saved':
+        return filteredSavedRegistrations;
       default:
         return [];
     }
@@ -384,6 +444,8 @@ const Admin = () => {
         return 'Search by guardian name, email, or phone...';
       case 'participants':
         return 'Search by participant name or guardian...';
+      case 'saved':
+        return 'Search by saved registration ID, guardian name, or participant name...';
       default:
         return 'Search...';
     }
@@ -443,6 +505,12 @@ const Admin = () => {
           onClick={() => setActiveTab('participants')}
         >
           Participants ({participants.length})
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'saved' ? 'active' : ''}`}
+          onClick={() => setActiveTab('saved')}
+        >
+          Saved Registrations ({savedRegistrations.length})
         </button>
       </div>
 
@@ -715,6 +783,101 @@ const Admin = () => {
                   ))}
                 </div>
               </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'saved' && (
+          <div className="saved-registrations-list">
+            {filteredSavedRegistrations.length === 0 ? (
+              <div className="no-data">
+                {searchTerm ? 'No saved registrations match your search criteria.' : 'No saved registrations found.'}
+              </div>
+            ) : (
+              filteredSavedRegistrations.map((saved) => (
+                <div key={saved.id} className="saved-registration-card">
+                  <div className="saved-registration-header">
+                    <div className="saved-registration-info">
+                      <h3>{saved.parent?.name || 'N/A'}</h3>
+                      <p className="saved-registration-id">ID: {saved.savedRegistrationId}</p>
+                      <p className="saved-registration-date">
+                        Started: {formatDate(saved.createdAt)}
+                      </p>
+                      <p className="saved-registration-date">
+                        Last Updated: {formatDate(saved.updatedAt)}
+                      </p>
+                    </div>
+                    <div className="saved-registration-status">
+                      <span className="status-badge incomplete-status">
+                        INCOMPLETE
+                      </span>
+                      <div className="step-info">
+                        Step {saved.step || 1} of 4
+                      </div>
+                      <div className="saved-registration-actions">
+                        <button
+                          onClick={() => handleDeleteSaved(saved)}
+                          className="delete-btn"
+                          title="Delete saved registration"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="saved-registration-details">
+                    <div className="detail-section">
+                      <h4>Contact Information</h4>
+                      <p><strong>Email:</strong> {saved.parent?.email || 'N/A'}</p>
+                      <p><strong>Phone:</strong> {saved.parent?.phone || 'N/A'}</p>
+                      <p><strong>Address:</strong> {saved.parent?.address || 'N/A'}</p>
+                      <p><strong>City:</strong> {saved.parent?.city || 'N/A'}</p>
+                      <p><strong>State:</strong> {saved.parent?.state || 'N/A'}</p>
+                      <p><strong>Zip:</strong> {saved.parent?.zipCode || 'N/A'}</p>
+                      <p><strong>Country:</strong> {saved.parent?.country || 'N/A'}</p>
+                    </div>
+
+                    <div className="detail-section">
+                      <h4>Participants ({saved.children?.length || 0})</h4>
+                      {saved.children && saved.children.length > 0 ? (
+                        saved.children.map((child, idx) => (
+                          <div key={idx} className="participant-info">
+                            <p><strong>{child.name || 'Unnamed'}</strong></p>
+                            {child.age && <p>Age: {child.age}</p>}
+                            {child.grade && <p>Grade: {child.grade}</p>}
+                            {child.gender && <p>Gender: {child.gender}</p>}
+                            {child.dietary && <p><em>Dietary:</em> {child.dietary}</p>}
+                            {child.medical && <p><em>Medical:</em> {child.medical}</p>}
+                          </div>
+                        ))
+                      ) : (
+                        <p>No participant information entered yet.</p>
+                      )}
+                    </div>
+
+                    <div className="detail-section">
+                      <h4>Progress Status</h4>
+                      <p><strong>Current Step:</strong> {saved.step || 1} of 4</p>
+                      <div className="step-indicator">
+                        <div className={`step ${saved.step >= 1 ? 'completed' : ''}`}>1. Parent Info</div>
+                        <div className={`step ${saved.step >= 2 ? 'completed' : ''}`}>2. Participants</div>
+                        <div className={`step ${saved.step >= 3 ? 'completed' : ''}`}>3. Agreements</div>
+                        <div className={`step ${saved.step >= 4 ? 'completed' : ''}`}>4. Payment</div>
+                      </div>
+                      {saved.agreement && Object.values(saved.agreement).some(val => val) && (
+                        <div>
+                          <p><strong>Agreements Status:</strong></p>
+                          <p>Liability: {saved.agreement.liability ? '✅' : '❌'}</p>
+                          <p>Medical: {saved.agreement.medical ? '✅' : '❌'}</p>
+                          <p>Photos: {saved.agreement.photos ? '✅' : '❌'}</p>
+                          <p>Conduct: {saved.agreement.conduct ? '✅' : '❌'}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}

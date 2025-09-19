@@ -23,8 +23,8 @@ const analytics = getAnalytics(app);
 // Initialize Firestore
 export const db = getFirestore(app);
 
-// Initialize Functions
-export const functions = getFunctions(app);
+// Initialize Functions (specify region to match deployment)
+export const functions = getFunctions(app, 'us-central1');
 
 // Initialize Auth
 export const auth = getAuth(app);

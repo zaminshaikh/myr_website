@@ -231,6 +231,134 @@ export default function Register() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [registrationId, setRegistrationId] = useState('');
   const [testMode, setTestMode] = useState(false);
+  const [showContinueDialog, setShowContinueDialog] = useState(false);
+  const [hasSavedData, setHasSavedData] = useState(false);
+
+  // Auto-save registration data to localStorage and backend
+  const saveRegistrationProgress = async (progressData) => {
+    try {
+      const dataToSave = {
+        step: progressData.step || step,
+        parent: progressData.parent || parent,
+        children: progressData.children || children,
+        agreement: progressData.agreement || agreement,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Save to localStorage for immediate recovery
+      localStorage.setItem('myr_registration_progress', JSON.stringify(dataToSave));
+      
+      // Only save to backend if we have an email (prevents spam and enables proper deduplication)
+      if (dataToSave.parent.email && dataToSave.parent.email.includes('@')) {
+        try {
+          const saveProgressToBackend = httpsCallable(functions, 'saveRegistrationProgress');
+          await saveProgressToBackend({ 
+            progressData: {
+              step: dataToSave.step,
+              parent: dataToSave.parent,
+              children: dataToSave.children,
+              agreement: dataToSave.agreement
+            }
+          });
+        } catch (backendError) {
+          console.warn('Failed to save progress to backend:', backendError);
+          // Don't throw - localStorage save is still working
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to save registration progress:', error);
+    }
+  };
+
+  // Load saved registration data from localStorage
+  const loadSavedData = () => {
+    try {
+      const savedData = localStorage.getItem('myr_registration_progress');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        // Check if data is not too old (24 hours)
+        const dataAge = new Date() - new Date(parsedData.timestamp);
+        if (dataAge < 24 * 60 * 60 * 1000) { // 24 hours in milliseconds
+          return parsedData;
+        } else {
+          // Clear old data
+          clearSavedData();
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load saved registration data:', error);
+      // Clear corrupted data
+      clearSavedData();
+    }
+    return null;
+  };
+
+  // Clear saved registration data
+  const clearSavedData = () => {
+    try {
+      localStorage.removeItem('myr_registration_progress');
+    } catch (error) {
+      console.warn('Failed to clear saved data:', error);
+    }
+  };
+
+  // Handle continuing from saved progress
+  const handleContinueFromSaved = () => {
+    const savedData = loadSavedData();
+    if (savedData) {
+      setStep(savedData.step);
+      setParent(savedData.parent);
+      setChildren(savedData.children);
+      setAgreement(savedData.agreement);
+    }
+    setShowContinueDialog(false);
+    setHasSavedData(false);
+  };
+
+  // Handle starting fresh
+  const handleStartFresh = async () => {
+    // Delete saved registration from backend if we have an email
+    const currentEmail = parent.email || loadSavedData()?.parent?.email;
+    if (currentEmail && currentEmail.includes('@')) {
+      try {
+        const deleteSavedRegistrationByEmail = httpsCallable(functions, 'deleteSavedRegistrationByEmail');
+        await deleteSavedRegistrationByEmail({ email: currentEmail });
+        console.log('Saved registration deleted from backend');
+      } catch (error) {
+        console.warn('Failed to delete saved registration from backend:', error);
+        // Continue anyway - localStorage will still be cleared
+      }
+    }
+    
+    clearSavedData();
+    setShowContinueDialog(false);
+    setHasSavedData(false);
+  };
+
+  // Check for saved data on component mount
+  useEffect(() => {
+    const savedData = loadSavedData();
+    if (savedData) {
+      setHasSavedData(true);
+      setShowContinueDialog(true);
+    }
+  }, []);
+
+  // Auto-save when registration data changes
+  useEffect(() => {
+    // Don't auto-save if we haven't started or if we're showing the continue dialog
+    if (!hasSavedData && !showContinueDialog && (
+      parent.name || parent.email || parent.phone || 
+      children.some(child => child.name || child.age) ||
+      Object.values(agreement).some(val => val)
+    )) {
+      const timeoutId = setTimeout(() => {
+        saveRegistrationProgress({ step, parent, children, agreement });
+      }, 1000); // Debounce for 1 second
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [step, parent, children, agreement, hasSavedData, showContinueDialog]);
 
   const handleChildChange = (idx, field, value) => {
     setChildren((prev) => {
@@ -305,9 +433,24 @@ export default function Register() {
     setStep(step - 1);
   };
 
-  const handlePaymentSuccess = (regId) => {
+  const handlePaymentSuccess = async (regId) => {
     setRegistrationId(regId);
     setPaymentSuccess(true);
+    
+    // Clear saved data since registration is complete
+    clearSavedData();
+    
+    // Also delete saved registration from backend
+    if (parent.email && parent.email.includes('@')) {
+      try {
+        const deleteSavedRegistrationByEmail = httpsCallable(functions, 'deleteSavedRegistrationByEmail');
+        await deleteSavedRegistrationByEmail({ email: parent.email });
+        console.log('Saved registration cleaned up from backend after successful payment');
+      } catch (error) {
+        console.warn('Failed to clean up saved registration from backend:', error);
+        // This is not critical since payment was successful
+      }
+    }
   };
 
   // Check test mode on component mount and listen for changes
@@ -421,6 +564,34 @@ export default function Register() {
           <div className={`progress-step ${step >= 4 ? 'active' : ''}`}>4</div>
         </div>
       </div>
+
+      {/* Continue Registration Dialog */}
+      {showContinueDialog && (
+        <div className="dialog-overlay">
+          <div className="dialog-content">
+            <div className="dialog-header">
+              <h3>Continue Previous Registration?</h3>
+            </div>
+            <div className="dialog-body">
+              <p>We found that you have a registration in progress from earlier. Would you like to continue from where you left off, or start fresh?</p>
+              <div className="dialog-actions">
+                <button 
+                  onClick={handleContinueFromSaved}
+                  className="continue-btn"
+                >
+                  Continue from where I left off
+                </button>
+                <button 
+                  onClick={handleStartFresh}
+                  className="start-fresh-btn"
+                >
+                  Start fresh
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="register-form">
         {step === 1 && (
