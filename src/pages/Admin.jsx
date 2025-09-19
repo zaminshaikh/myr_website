@@ -14,7 +14,6 @@ const Admin = () => {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const { currentUser, signout } = useAuth();
@@ -453,17 +452,6 @@ const Admin = () => {
                         )}
                       </div>
                     )}
-                  </div>
-                  
-                  <div className="registration-actions">
-                    <button 
-                      onClick={() => setSelectedItem(
-                        selectedItem === registration.id ? null : registration.id
-                      )}
-                      className="toggle-details-btn"
-                    >
-                      {selectedItem === registration.id ? 'Hide Details' : 'Show Details'}
-                    </button>
                   </div>
                 </div>
               ))
