@@ -5,6 +5,8 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import DevModeToggle from '../components/DevModeToggle';
 import './Register.css';
 
 // Load Stripe with dynamic key based on test mode
@@ -814,6 +816,7 @@ export default function Register() {
           </div>
         )}
       </div>
+      <DevModeToggle />
     </div>
   );
 }
