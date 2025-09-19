@@ -412,6 +412,14 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="footer">
+        <div className="container">
+          <p>&copy; 2025 Muslim Youth Retreat. All rights reserved.</p>
+          <Link to="/admin" className="admin-link">Admin</Link>
+        </div>
+      </footer>
     </div>
   )
 }

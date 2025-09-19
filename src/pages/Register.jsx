@@ -1,55 +1,166 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import InputMask from 'react-input-mask';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../firebase';
 import './Register.css';
 
+// Load Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
 const CheckoutForm = ({ registrationData, total, onSuccess }) => {
+  const stripe = useStripe();
+  const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [clientSecret, setClientSecret] = useState('');
+
+  useEffect(() => {
+    // Create payment intent when component mounts
+    createPaymentIntent();
+  }, []);
+
+  const createPaymentIntent = async () => {
+    try {
+      // Get the Firebase Functions URL - you'll need to update this with your actual project URL
+      const functionsUrl = import.meta.env.VITE_FIREBASE_FUNCTIONS_URL || 'https://us-central1-your-project-id.cloudfunctions.net';
+      
+      const response = await fetch(`${functionsUrl}/createPaymentIntent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: total,
+          registrationData: registrationData
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
+      } else {
+        setError('Failed to initialize payment');
+      }
+    } catch (err) {
+      console.error('Error creating payment intent:', err);
+      setError('Failed to initialize payment');
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    
+    if (!stripe || !elements || !clientSecret) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // Simulate payment processing
-      console.log('Registration Data:', registrationData);
-      console.log('Total Amount:', total);
-      
-      // Simulate API call delay
-      setTimeout(() => {
+      // First save the registration data
+      const saveRegistration = httpsCallable(functions, 'saveRegistration');
+      const registrationResult = await saveRegistration({
+        registrationData: {
+          ...registrationData,
+          total: total
+        }
+      });
+
+      if (!registrationResult.data.success) {
+        throw new Error('Failed to save registration');
+      }
+
+      const registrationId = registrationResult.data.registrationId;
+
+      // Confirm payment with Stripe
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: elements.getElement(CardElement),
+          billing_details: {
+            name: registrationData.parent.name,
+            email: registrationData.parent.email,
+            phone: registrationData.parent.phone,
+            address: {
+              line1: registrationData.parent.address,
+              line2: registrationData.parent.apartment,
+              city: registrationData.parent.city,
+              state: registrationData.parent.state,
+              postal_code: registrationData.parent.zipCode,
+              country: registrationData.parent.country,
+            },
+          },
+        },
+      });
+
+      if (stripeError) {
+        setError(stripeError.message);
         setLoading(false);
-        onSuccess();
-      }, 2000);
+        return;
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        // Confirm payment in our backend
+        const confirmPayment = httpsCallable(functions, 'confirmPayment');
+        await confirmPayment({
+          paymentIntentId: paymentIntent.id,
+          registrationId: registrationId
+        });
+
+        onSuccess(registrationId);
+      }
 
     } catch (err) {
-      setError(err.message);
+      console.error('Payment error:', err);
+      setError(err.message || 'An error occurred during payment');
       setLoading(false);
     }
+  };
+
+  const cardElementOptions = {
+    style: {
+      base: {
+        fontSize: '16px',
+        color: '#424770',
+        '::placeholder': {
+          color: '#aab7c4',
+        },
+      },
+      invalid: {
+        color: '#9e2146',
+      },
+    },
   };
 
   return (
     <form onSubmit={handleSubmit} className="checkout-form">
       <div className="card-element-container">
-        <div className="demo-card-input">
-          <p><strong>Demo Payment Form</strong></p>
-          <p>This is a demonstration. In production, this would be replaced with Stripe Elements.</p>
-          <input type="text" placeholder="Card Number" disabled />
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <input type="text" placeholder="MM/YY" disabled />
-            <input type="text" placeholder="CVC" disabled />
-          </div>
-        </div>
+        <label htmlFor="card-element">
+          Credit or debit card
+        </label>
+        <CardElement
+          id="card-element"
+          options={cardElementOptions}
+        />
       </div>
+      
       {error && <div className="error-message">{error}</div>}
+      
       <button 
         type="submit" 
-        disabled={loading}
+        disabled={!stripe || loading || !clientSecret}
         className="pay-button"
       >
         {loading ? 'Processing...' : `Complete Registration - $${total}`}
       </button>
+      
+      <div className="payment-security">
+        <p>🔒 Your payment information is secure and encrypted</p>
+      </div>
     </form>
   );
 };
@@ -87,6 +198,7 @@ export default function Register() {
     conduct: false
   });
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [registrationId, setRegistrationId] = useState('');
 
   const handleChildChange = (idx, field, value) => {
     setChildren((prev) => {
@@ -151,7 +263,8 @@ export default function Register() {
     setStep(step - 1);
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (regId) => {
+    setRegistrationId(regId);
     setPaymentSuccess(true);
   };
 
@@ -228,6 +341,7 @@ export default function Register() {
         <div className="success-message">
           <h2>Registration Successful!</h2>
           <p>Thank you for registering for the Muslim Youth Retreat 2025.</p>
+          <p><strong>Registration ID:</strong> {registrationId}</p>
           <p>You will receive a confirmation email shortly with all the details.</p>
           <Link to="/" className="back-home-btn">Back to Home</Link>
         </div>
@@ -630,24 +744,16 @@ export default function Register() {
               </div>
             </div>
             
-            <CheckoutForm 
-              registrationData={{ parent, children, agreement }}
-              total={total}
-              onSuccess={handlePaymentSuccess}
-            />
+            <Elements stripe={stripePromise}>
+              <CheckoutForm 
+                registrationData={{ parent, children, agreement }}
+                total={total}
+                onSuccess={handlePaymentSuccess}
+              />
+            </Elements>
             
             <div className="form-actions">
               <button type="button" onClick={handleBack} className="back-btn">Back</button>
-            </div>
-            
-            <div className="payment-note">
-              <p><strong>Note:</strong> This is a demo implementation. In production, you would need to:</p>
-              <ul>
-                <li>Replace the Stripe publishable key with your actual key</li>
-                <li>Set up a backend server to handle payment processing</li>
-                <li>Implement proper error handling and validation</li>
-                <li>Store registration data securely</li>
-              </ul>
             </div>
           </div>
         )}

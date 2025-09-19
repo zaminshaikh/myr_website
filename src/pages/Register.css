@@ -385,31 +385,41 @@
   background: #f8fafc;
 }
 
-.demo-card-input {
-  text-align: center;
+.card-element-container {
+  margin: 20px 0;
 }
 
-.demo-card-input p {
-  margin-bottom: 16px;
-  color: #6b7280;
+.card-element-container label {
+  display: block;
+  margin-bottom: 10px;
   font-weight: 500;
-}
-
-.demo-card-input p:first-child {
-  color: #1f2937;
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.demo-card-input input {
-  width: 100%;
-  padding: 16px;
-  margin: 8px 0;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  background: #f9fafb;
+  color: #333;
   font-size: 16px;
-  color: #9ca3af;
+}
+
+.StripeElement {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  transition: border-color 0.2s ease;
+}
+
+.StripeElement:focus,
+.StripeElement--focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.StripeElement--invalid {
+  border-color: #dc3545;
+}
+
+.payment-security {
+  text-align: center;
+  margin-top: 15px;
+  color: #666;
+  font-size: 14px;
 }
 
 .pay-button {
