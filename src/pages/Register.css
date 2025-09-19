@@ -45,7 +45,7 @@
   margin-bottom: 24px;
   padding: 12px 20px;
   border-radius: 12px;
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(255, 240, 78, 0.1);
   transition: all 0.3s ease;
   font-size: 15px;
 }
@@ -250,12 +250,12 @@
   display: block;
   margin-left: auto;
   margin-right: auto;
-  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 8px 32px rgba(85, 124, 186, 0.3);
 }
 
 .add-child-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 12px 40px rgba(85, 124, 186, 0.4);
 }
 
 /* Modern Agreement Styles */
@@ -429,7 +429,7 @@
 
 .pay-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 12px 40px rgba(238, 181, 65, 0.4);
 }
 
 .pay-button:disabled {
@@ -490,7 +490,7 @@
 
 .next-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 12px 40px rgba(238, 181, 65, 0.4);
 }
 
 .next-btn:disabled {
@@ -697,8 +697,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 50%);
+  background: radial-gradient(circle at 20% 80%, rgba(238, 181, 65, 0.03) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(85, 124, 186, 0.03) 0%, transparent 50%);
   border-radius: 24px;
   pointer-events: none;
 }
