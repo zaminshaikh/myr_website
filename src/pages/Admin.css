@@ -441,16 +441,16 @@
 }
 
 .table-header .table-row {
-  grid-template-columns: 150px 200px 250px 150px 200px 150px;
+  grid-template-columns: 200px 250px 300px 180px 250px 200px;
   font-weight: 600;
 }
 
 .guardians-list .table-header .table-row {
-  grid-template-columns: 150px 200px 250px 150px 200px 150px 150px;
+  grid-template-columns: 200px 250px 300px 180px 250px 200px 150px 200px;
 }
 
 .participants-list .table-header .table-row {
-  grid-template-columns: 150px 180px 80px 80px 80px 180px 200px 150px;
+  grid-template-columns: 200px 250px 120px 120px 120px 250px 300px 150px 200px;
 }
 
 .table-body .table-row {
@@ -467,15 +467,15 @@
 }
 
 .guardians-list .table-body .table-row {
-  grid-template-columns: 150px 200px 250px 150px 200px 150px 150px;
+  grid-template-columns: 200px 250px 300px 180px 250px 200px 150px 200px;
 }
 
 .participants-list .table-body .table-row {
-  grid-template-columns: 150px 180px 80px 80px 80px 180px 200px 150px;
+  grid-template-columns: 200px 250px 120px 120px 120px 250px 300px 150px 200px;
 }
 
 .table-cell {
-  padding: 15px 12px;
+  padding: 18px 16px;
   font-size: 14px;
   word-break: break-word;
   overflow: hidden;

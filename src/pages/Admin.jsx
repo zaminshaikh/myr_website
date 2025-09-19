@@ -15,7 +15,9 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('paid');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [guardianActiveFilter, setGuardianActiveFilter] = useState('all');
+  const [participantActiveFilter, setParticipantActiveFilter] = useState('all');
   const { currentUser, signout } = useAuth();
   const navigate = useNavigate();
 
@@ -87,17 +89,29 @@ const Admin = () => {
   });
 
   const filteredGuardians = guardians.filter(guardian => {
-    return guardian.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = guardian.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            guardian.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            guardian.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            guardian.guardianId?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesActiveFilter = guardianActiveFilter === 'all' || 
+           (guardianActiveFilter === 'active' && guardian.active !== false) ||
+           (guardianActiveFilter === 'inactive' && guardian.active === false);
+    
+    return matchesSearch && matchesActiveFilter;
   });
 
   const filteredParticipants = participants.filter(participant => {
-    return participant.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = participant.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            participant.participantId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            participant.guardian?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
            participant.guardian?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesActiveFilter = participantActiveFilter === 'all' || 
+           (participantActiveFilter === 'active' && participant.active !== false) ||
+           (participantActiveFilter === 'inactive' && participant.active === false);
+    
+    return matchesSearch && matchesActiveFilter;
   });
 
   const formatDate = (timestamp) => {
@@ -453,14 +467,45 @@ const Admin = () => {
               <option value="refunded">Refunded</option>
             </select>
           )}
-          {(activeTab === 'guardians' || activeTab === 'participants') && (
-            <button
-              onClick={activeTab === 'guardians' ? exportGuardiansCSV : exportParticipantsCSV}
-              className="export-csv-btn"
-              disabled={activeTab === 'guardians' ? guardians.length === 0 : participants.length === 0}
-            >
-              <FaDownload /> Export CSV
-            </button>
+          {activeTab === 'guardians' && (
+            <>
+              <select
+                value={guardianActiveFilter}
+                onChange={(e) => setGuardianActiveFilter(e.target.value)}
+                className="status-filter"
+              >
+                <option value="all">All Guardians</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <button
+                onClick={exportGuardiansCSV}
+                className="export-csv-btn"
+                disabled={guardians.length === 0}
+              >
+                <FaDownload /> Export CSV
+              </button>
+            </>
+          )}
+          {activeTab === 'participants' && (
+            <>
+              <select
+                value={participantActiveFilter}
+                onChange={(e) => setParticipantActiveFilter(e.target.value)}
+                className="status-filter"
+              >
+                <option value="all">All Participants</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <button
+                onClick={exportParticipantsCSV}
+                className="export-csv-btn"
+                disabled={participants.length === 0}
+              >
+                <FaDownload /> Export CSV
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -581,6 +626,7 @@ const Admin = () => {
                     <div className="table-cell">Phone</div>
                     <div className="table-cell">Location</div>
                     <div className="table-cell">Participants</div>
+                    <div className="table-cell">Status</div>
                     <div className="table-cell">Created</div>
                   </div>
                 </div>
@@ -602,6 +648,14 @@ const Admin = () => {
                           `${guardian.participantCount} participant${guardian.participantCount > 1 ? 's' : ''}` : 
                           '0 participants'
                         }
+                      </div>
+                      <div className="table-cell">
+                        <span 
+                          className="status-badge" 
+                          style={{ backgroundColor: guardian.active === false ? '#dc3545' : '#28a745' }}
+                        >
+                          {guardian.active === false ? 'INACTIVE' : 'ACTIVE'}
+                        </span>
                       </div>
                       <div className="table-cell">{formatDate(guardian.createdAt)}</div>
                     </div>
@@ -629,6 +683,7 @@ const Admin = () => {
                     <div className="table-cell">Gender</div>
                     <div className="table-cell">Guardian</div>
                     <div className="table-cell">Emergency Contact</div>
+                    <div className="table-cell">Status</div>
                     <div className="table-cell">Created</div>
                   </div>
                 </div>
@@ -646,6 +701,14 @@ const Admin = () => {
                           `${participant.emergencyContact.name} (${participant.emergencyContact.phone})` : 
                           'N/A'
                         }
+                      </div>
+                      <div className="table-cell">
+                        <span 
+                          className="status-badge" 
+                          style={{ backgroundColor: participant.active === false ? '#dc3545' : '#28a745' }}
+                        >
+                          {participant.active === false ? 'INACTIVE' : 'ACTIVE'}
+                        </span>
                       </div>
                       <div className="table-cell">{formatDate(participant.createdAt)}</div>
                     </div>

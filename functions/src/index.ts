@@ -114,6 +114,7 @@ export const saveRegistration = onCall(async (request) => {
       },
       participantIds: participantIds,
       participantCount: registrationData.children.length,
+      active: true,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
@@ -139,6 +140,7 @@ export const saveRegistration = onCall(async (request) => {
           name: child.emergencyContact,
           phone: child.emergencyPhone,
         },
+        active: true,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
@@ -416,10 +418,13 @@ export const refundPayment = onCall(
         },
       });
 
-      // Update registration status in Firestore (reuse the document we already found)
+      // Mark guardian and participants as inactive using batch operations
+      const db = admin.firestore();
+      const batch = db.batch();
       const registrationDoc = registrationSnapshot.docs[0];
-      
-      await registrationDoc.ref.update({
+
+      // Update registration status
+      batch.update(registrationDoc.ref, {
         status: "refunded",
         refundId: refund.id,
         refundAmount: refund.amount / 100, // Convert back to dollars
@@ -427,6 +432,47 @@ export const refundPayment = onCall(
         refundReason: reason || 'requested_by_customer',
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+
+      // Mark guardian as inactive if they exist
+      if (registrationData.guardianId) {
+        const guardianQuery = db
+            .collection("guardians")
+            .where("guardianId", "==", registrationData.guardianId);
+        
+        const guardianSnapshot = await guardianQuery.get();
+        if (!guardianSnapshot.empty) {
+          const guardianDoc = guardianSnapshot.docs[0];
+          batch.update(guardianDoc.ref, {
+            active: false,
+            inactivatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            inactivatedReason: 'registration_refunded',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          logger.info(`Marking guardian ${registrationData.guardianId} as inactive`);
+        }
+      }
+
+      // Mark all participants as inactive
+      const participantsQuery = db
+          .collection("participants")
+          .where("registrationId", "==", registrationId);
+      
+      const participantsSnapshot = await participantsQuery.get();
+      participantsSnapshot.docs.forEach((participantDoc) => {
+        batch.update(participantDoc.ref, {
+          active: false,
+          inactivatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          inactivatedReason: 'registration_refunded',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+      
+      if (participantsSnapshot.size > 0) {
+        logger.info(`Marking ${participantsSnapshot.size} participants as inactive for registration ${registrationId}`);
+      }
+
+      // Commit all updates
+      await batch.commit();
 
       logger.info(`Payment refunded for registration: ${registrationId}, Refund ID: ${refund.id}`);
       
