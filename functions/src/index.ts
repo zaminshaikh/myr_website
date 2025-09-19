@@ -344,6 +344,8 @@ export const confirmPayment = onCall(
         const doc = snapshot.docs[0];
         await doc.ref.update({
           status: "paid",
+          paymentIntentId: paymentIntentId,
+          testMode: useTestMode,
           paymentConfirmedAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
@@ -362,3 +364,164 @@ export const confirmPayment = onCall(
   }
   }
 );
+
+// Refund payment
+export const refundPayment = onCall(
+  { secrets: [stripeSecretKey, stripeTestSecretKey] },
+  async (request) => {
+    logger.info("Refund payment function called", { data: request.data });
+    try {
+      const { paymentIntentId, amount, reason, registrationId } = request.data;
+
+      if (!paymentIntentId) {
+        throw new Error("Payment intent ID is required");
+      }
+
+      if (!registrationId) {
+        throw new Error("Registration ID is required");
+      }
+
+      // First, get the registration to determine the test mode
+      const registrationQuery = admin.firestore()
+          .collection("registrations")
+          .where("registrationId", "==", registrationId);
+      
+      const registrationSnapshot = await registrationQuery.get();
+      
+      if (registrationSnapshot.empty) {
+        throw new Error("Registration not found");
+      }
+      
+      const registrationData = registrationSnapshot.docs[0].data();
+      const useTestMode = registrationData.testMode === true;
+      
+      logger.info("Using stored test mode from registration", { 
+        registrationId, 
+        useTestMode,
+        storedTestMode: registrationData.testMode 
+      });
+      
+      // Initialize Stripe with the correct mode
+      const stripe = getStripe(useTestMode);
+      
+      // Create refund with Stripe
+      const refund = await stripe.refunds.create({
+        payment_intent: paymentIntentId,
+        amount: amount ? Math.round(amount * 100) : undefined,
+        reason: reason || 'requested_by_customer',
+        metadata: {
+          registrationId: registrationId,
+          refundedBy: 'admin_portal',
+          refundDate: new Date().toISOString(),
+        },
+      });
+
+      // Update registration status in Firestore (reuse the document we already found)
+      const registrationDoc = registrationSnapshot.docs[0];
+      
+      await registrationDoc.ref.update({
+        status: "refunded",
+        refundId: refund.id,
+        refundAmount: refund.amount / 100, // Convert back to dollars
+        refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+        refundReason: reason || 'requested_by_customer',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      logger.info(`Payment refunded for registration: ${registrationId}, Refund ID: ${refund.id}`);
+      
+      return {
+        success: true,
+        refundId: refund.id,
+        refundAmount: refund.amount / 100,
+        status: "refunded"
+      };
+    } catch (error: any) {
+      logger.error("Error processing refund:", error);
+      throw new Error(`Failed to process refund: ${error.message}`);
+    }
+  }
+);
+
+// Delete registration and all related documents
+export const deleteRegistration = onCall(async (request) => {
+  logger.info("Delete registration function called", { data: request.data });
+  try {
+    const { registrationId } = request.data;
+
+    if (!registrationId) {
+      throw new Error("Registration ID is required");
+    }
+
+    const db = admin.firestore();
+    const batch = db.batch();
+
+    // Find the registration document
+    const registrationQuery = db
+        .collection("registrations")
+        .where("registrationId", "==", registrationId);
+    
+    const registrationSnapshot = await registrationQuery.get();
+
+    if (registrationSnapshot.empty) {
+      throw new Error("Registration not found");
+    }
+
+    const registrationDoc = registrationSnapshot.docs[0];
+    const registrationData = registrationDoc.data();
+    
+    // Delete the registration document
+    batch.delete(registrationDoc.ref);
+
+    // Delete all participants associated with this registration
+    const participantsQuery = db
+        .collection("participants")
+        .where("registrationId", "==", registrationId);
+    
+    const participantsSnapshot = await participantsQuery.get();
+    participantsSnapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    // Delete the guardian if they have no other participants
+    if (registrationData.guardianId) {
+      // Check if this guardian has other participants not in this registration
+      const otherParticipantsQuery = db
+          .collection("participants")
+          .where("guardianId", "==", registrationData.guardianId);
+      
+      const otherParticipantsSnapshot = await otherParticipantsQuery.get();
+      
+      // Filter out participants that belong to the registration being deleted
+      const remainingParticipants = otherParticipantsSnapshot.docs.filter(
+        doc => doc.data().registrationId !== registrationId
+      );
+
+      if (remainingParticipants.length === 0) {
+        // No other participants, safe to delete guardian
+        const guardianQuery = db
+            .collection("guardians")
+            .where("guardianId", "==", registrationData.guardianId);
+        
+        const guardianSnapshot = await guardianQuery.get();
+        guardianSnapshot.docs.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+      }
+    }
+
+    // Commit all deletions
+    await batch.commit();
+
+    logger.info(`Registration ${registrationId} and all related documents deleted successfully`);
+
+    return {
+      success: true,
+      message: "Registration and all related documents deleted successfully",
+      deletedRegistrationId: registrationId,
+    };
+  } catch (error: any) {
+    logger.error("Error deleting registration:", error);
+    throw new Error(`Failed to delete registration: ${error.message}`);
+  }
+});

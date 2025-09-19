@@ -234,6 +234,10 @@
 
 .registration-status {
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
 }
 
 .status-badge {
@@ -243,13 +247,55 @@
   font-size: 12px;
   font-weight: bold;
   display: inline-block;
-  margin-bottom: 10px;
 }
 
 .registration-total {
   font-size: 1.5rem;
   font-weight: bold;
   color: #28a745;
+}
+
+.registration-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.refund-btn {
+  background: #ffc107;
+  color: #212529;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 60px;
+}
+
+.refund-btn:hover {
+  background: #e0a800;
+  transform: translateY(-1px);
+}
+
+.delete-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 60px;
+}
+
+.delete-btn:hover {
+  background: #c82333;
+  transform: translateY(-1px);
 }
 
 .registration-details {
@@ -495,6 +541,11 @@
   
   .registration-status {
     text-align: left;
+    align-items: flex-start;
+  }
+  
+  .registration-actions {
+    justify-content: flex-start;
   }
   
   .registration-details {

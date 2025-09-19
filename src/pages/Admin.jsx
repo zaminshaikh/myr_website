@@ -15,7 +15,7 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('paid');
   const { currentUser, signout } = useAuth();
   const navigate = useNavigate();
 
@@ -237,6 +237,7 @@ const Admin = () => {
     switch (status) {
       case 'paid': return '#28a745';
       case 'pending': return '#ffc107';
+      case 'refunded': return '#dc3545';
       default: return '#6c757d';
     }
   };
@@ -249,6 +250,84 @@ const Admin = () => {
       } catch (error) {
         console.error('Error logging out:', error);
       }
+    }
+  };
+
+  const handleRefund = async (registration) => {
+    const confirmRefund = window.confirm(
+      `Are you sure you want to refund the payment for ${registration.parent?.name || 'this registration'}?\n\n` +
+      `Amount: $${registration.total}\n` +
+      `Registration ID: ${registration.registrationId}\n\n` +
+      `This action will process a full refund through Stripe and cannot be undone.`
+    );
+
+    if (!confirmRefund) return;
+
+    try {
+      setLoading(true);
+      const refundPayment = httpsCallable(functions, 'refundPayment');
+      const result = await refundPayment({
+        paymentIntentId: registration.paymentIntentId,
+        registrationId: registration.registrationId,
+        amount: registration.total,
+        reason: 'requested_by_customer'
+      });
+
+      if (result.data.success) {
+        alert(`Refund processed successfully!\nRefund ID: ${result.data.refundId}\nAmount: $${result.data.refundAmount}`);
+        await fetchAllData(); // Refresh data
+      } else {
+        throw new Error('Refund failed');
+      }
+    } catch (error) {
+      console.error('Error processing refund:', error);
+      alert(`Failed to process refund: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (registration) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to PERMANENTLY DELETE this registration?\n\n` +
+      `Guardian: ${registration.parent?.name || 'N/A'}\n` +
+      `Registration ID: ${registration.registrationId}\n` +
+      `Participants: ${registration.children?.length || 0}\n\n` +
+      `This action will:\n` +
+      `• Delete the registration completely\n` +
+      `• Remove all participant records\n` +
+      `• Remove guardian record (if no other registrations)\n\n` +
+      `THIS CANNOT BE UNDONE!`
+    );
+
+    if (!confirmDelete) return;
+
+    // Double confirmation for delete
+    const doubleConfirm = window.confirm(
+      `FINAL CONFIRMATION\n\n` +
+      `Type "DELETE" in your mind and click OK to proceed with permanent deletion of registration ${registration.registrationId}`
+    );
+
+    if (!doubleConfirm) return;
+
+    try {
+      setLoading(true);
+      const deleteRegistration = httpsCallable(functions, 'deleteRegistration');
+      const result = await deleteRegistration({
+        registrationId: registration.registrationId
+      });
+
+      if (result.data.success) {
+        alert(`Registration deleted successfully!\nRegistration ID: ${result.data.deletedRegistrationId}`);
+        await fetchAllData(); // Refresh data
+      } else {
+        throw new Error('Delete failed');
+      }
+    } catch (error) {
+      console.error('Error deleting registration:', error);
+      alert(`Failed to delete registration: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -371,6 +450,7 @@ const Admin = () => {
               <option value="all">All Status</option>
               <option value="paid">Paid</option>
               <option value="pending">Pending</option>
+              <option value="refunded">Refunded</option>
             </select>
           )}
           {(activeTab === 'guardians' || activeTab === 'participants') && (
@@ -416,6 +496,24 @@ const Admin = () => {
                       <div className="registration-total">
                         ${registration.total}
                       </div>
+                      <div className="registration-actions">
+                        {(registration.status === 'paid' || registration.status === 'PAID') && registration.paymentIntentId && (
+                          <button
+                            onClick={() => handleRefund(registration)}
+                            className="refund-btn"
+                            title={`Process full refund for $${registration.total}`}
+                          >
+                            Refund
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDelete(registration)}
+                          className="delete-btn"
+                          title="Permanently delete registration"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                   
@@ -449,6 +547,14 @@ const Admin = () => {
                         <p><strong>Payment Intent ID:</strong> {registration.paymentIntentId}</p>
                         {registration.paymentConfirmedAt && (
                           <p><strong>Payment Confirmed:</strong> {formatDate(registration.paymentConfirmedAt)}</p>
+                        )}
+                        {registration.status === 'refunded' && (
+                          <>
+                            <p><strong>Refund ID:</strong> {registration.refundId || 'N/A'}</p>
+                            <p><strong>Refund Amount:</strong> ${registration.refundAmount || registration.total}</p>
+                            <p><strong>Refunded At:</strong> {formatDate(registration.refundedAt)}</p>
+                            <p><strong>Refund Reason:</strong> {registration.refundReason || 'N/A'}</p>
+                          </>
                         )}
                       </div>
                     )}
