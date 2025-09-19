@@ -672,76 +672,7 @@ body {
   color: #6b7280;
 }
 
-/* Contact Form Styles */
-.contact-form-container {
-  max-width: 600px;
-  margin: 40px auto 0 auto;
-}
-
-.contact-form {
-  background: #ffffff;
-  padding: 40px;
-  border-radius: 20px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f1f5f9;
-}
-
-.form-group {
-  margin-bottom: 24px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #374151;
-  font-size: 14px;
-  text-align: left;
-}
-
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  font-family: inherit;
-  text-align: left;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #EEB541;
-  box-shadow: 0 0 0 3px rgba(238, 181, 65, 0.1);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 120px;
-}
-
-.contact-submit-btn {
-  background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%);
-  color: white;
-  padding: 14px 32px;
-  border-radius: 12px;
-  border: none;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-  box-shadow: 0 4px 16px rgba(238, 181, 65, 0.3);
-}
-
-.contact-submit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(238, 181, 65, 0.4);
-  background: linear-gradient(135deg, #D4A43A 0%, #C19A35 100%);
-}
+/* Contact form styles are now in ContactForm.css */
 
 /* Responsive Design */
 @media (max-width: 768px) {

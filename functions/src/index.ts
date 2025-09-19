@@ -4,6 +4,7 @@ import * as admin from "firebase-admin";
 import { defineSecret } from "firebase-functions/params";
 const Stripe = require("stripe");
 const cors = require("cors");
+const { Resend } = require("resend");
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
@@ -13,6 +14,9 @@ if (!admin.apps.length) {
 // Define Stripe secret keys
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const stripeTestSecretKey = defineSecret("STRIPE_TEST_SECRET_KEY");
+
+// Define Resend API key
+const resendApiKey = defineSecret("RESEND_API_KEY");
 
 
 // Initialize Stripe (will be initialized in each function)
@@ -685,6 +689,110 @@ export const deleteSavedRegistrationByEmail = onCall(async (request) => {
   }
 });
 
+// Send contact form email
+export const sendContactEmail = onCall(
+  { secrets: [resendApiKey] },
+  async (request) => {
+    try {
+      const { name, email, phone, subject, message } = request.data;
+
+      // Validate required fields
+      if (!name || !email || !subject || !message) {
+        throw new Error("Name, email, subject, and message are required");
+      }
+
+      // Initialize Resend
+      const resend = new Resend(resendApiKey.value());
+
+      // Prepare email content
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2c5530; border-bottom: 2px solid #2c5530; padding-bottom: 10px;">
+            New Contact Form Submission
+          </h2>
+          
+          <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <p><strong>From:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
+            <p><strong>Subject:</strong> ${subject}</p>
+          </div>
+          
+          <div style="margin: 20px 0;">
+            <h3 style="color: #2c5530;">Message:</h3>
+            <div style="background-color: #fff; padding: 15px; border-left: 4px solid #2c5530; margin: 10px 0;">
+              ${message.replace(/\n/g, '<br>')}
+            </div>
+          </div>
+          
+          <hr style="margin: 30px 0; border: 1px solid #eee;">
+          <p style="color: #666; font-size: 12px;">
+            This email was sent from the Muslim Youth Retreat 2025 contact form.
+          </p>
+        </div>
+      `;
+
+      // Validate email addresses before sending
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        throw new Error(`Invalid sender email format: ${email}`);
+      }
+
+      // Send email using Resend
+      logger.info('Attempting to send email via Resend', {
+        from: email,
+        to: 'info@muslimyouthretreat.org',
+        subject: subject,
+        hasMessage: !!message
+      });
+
+      const result = await resend.emails.send({
+        from: 'MYR Contact Form <inquiry@resend.dev>',
+        to: ['info@muslimyouthretreat.org'],
+        replyTo: email,
+        subject: `Contact Form: ${subject}`,
+        html: emailHtml,
+      });
+
+      logger.info(`Contact email sent successfully`, { 
+        messageId: result.data?.id,
+        from: email,
+        subject: subject,
+        resendResponse: result
+      });
+
+      return {
+        success: true,
+        message: "Email sent successfully",
+        messageId: result.data?.id,
+      };
+    } catch (error: any) {
+      logger.error("Error sending contact email:", {
+        error: error.message,
+        stack: error.stack,
+        name: error.name,
+        statusCode: error.statusCode,
+        resendError: error.response?.data || error.response || error,
+        requestData: {
+          from: request.data.email,
+          to: 'info@muslimyouthretreat.org',
+          subject: request.data.subject
+        }
+      });
+      
+      // Provide more specific error messages
+      if (error.statusCode === 422) {
+        throw new Error(`Email validation error: ${error.message}`);
+      } else if (error.statusCode === 429) {
+        throw new Error("Rate limit exceeded. Please try again later.");
+      } else if (error.statusCode >= 500) {
+        throw new Error("Email service temporarily unavailable. Please try again later.");
+      } else {
+        throw new Error(`Failed to send contact email: ${error.message}`);
+      }
+    }
+  }
+);
 
 // Delete registration and all related documents
 export const deleteRegistration = onCall(async (request) => {
