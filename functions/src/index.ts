@@ -5,6 +5,9 @@ import { defineSecret } from "firebase-functions/params";
 const Stripe = require("stripe");
 const cors = require("cors");
 const { Resend } = require("resend");
+const { jsPDF } = require("jspdf");
+const JSZip = require("jszip");
+const { getStorage } = require("firebase-admin/storage");
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
@@ -76,7 +79,7 @@ const sendConfirmationEmailHelper = async (emailData: {
           Participant ${index + 1}: ${child.name}
         </h4>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; font-size: 14px; color: #4b5563;">
-          <div><strong>Age:</strong> ${child.age}</div>
+          <div><strong>DOB:</strong> ${child.dateOfBirth || child.age || 'N/A'}</div>
           <div><strong>Grade:</strong> ${child.grade}</div>
           <div><strong>Gender:</strong> ${child.gender}</div>
         </div>
@@ -125,11 +128,46 @@ const sendConfirmationEmailHelper = async (emailData: {
             </p>
           </div>
 
+          <!-- Personal Message from Team -->
+          <div style="background: linear-gradient(135deg, rgba(238, 181, 65, 0.1) 0%, rgba(85, 124, 186, 0.1) 100%); padding: 32px; border-radius: 20px; margin-bottom: 32px; border: 1px solid rgba(238, 181, 65, 0.2);">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h3 style="margin: 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center;">
+                Message from the Team
+              </h3>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.7); padding: 24px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.3);">
+              <p style="margin: 0 0 16px 0; color: #374151; font-size: 16px; line-height: 1.7; font-style: italic;">
+                "Salam Alaykum,
+              </p>
+              <p style="margin: 0 0 16px 0; color: #374151; font-size: 16px; line-height: 1.7;">
+                Thank you for successfully submitting your registration for the Muslim Youth Retreat 2025.
+              </p>
+              <p style="margin: 0 0 16px 0; color: #374151; font-size: 16px; line-height: 1.7;">
+                ${type === 'payment' ? 
+                  'Your payment has been completed and you are all set! We look forward to seeing you at the retreat.' :
+                  'If you\'ve completed your payment already, then you are all set! Please note, registration is not complete until payment is made in full.'
+                }
+              </p>
+              <p style="margin: 0 0 16px 0; color: #374151; font-size: 16px; line-height: 1.7;">
+                For any questions, or to request alternate payment options, you may contact us at 
+                <a href="mailto:info@muslimyouthretreat.org" style="color: #EEB541; text-decoration: none; font-weight: 600;">info@muslimyouthretreat.org</a>
+              </p>
+              <p style="margin: 0; color: #374151; font-size: 16px; line-height: 1.7; font-weight: 600;">
+                Sincerely,<br>
+                The Muslim Youth Retreat Team"
+              </p>
+            </div>
+          </div>
+
           ${registrationId ? `
           <!-- Registration Details -->
           <div style="background: linear-gradient(135deg, rgba(85, 124, 186, 0.1) 0%, rgba(238, 181, 65, 0.1) 100%); padding: 32px; border-radius: 20px; margin-bottom: 32px; border: 1px solid rgba(85, 124, 186, 0.2);">
             <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
-              <span style="background: linear-gradient(135deg, #557CBA 0%, #4A6BA8 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 16px;">✓</span>
+              <span style="background: linear-gradient(135deg, #557CBA 0%, #4A6BA8 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+              </span>
               Registration Details
             </h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
@@ -155,7 +193,14 @@ const sendConfirmationEmailHelper = async (emailData: {
           <!-- Participants -->
           <div style="margin-bottom: 32px;">
             <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
-              <span style="background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 16px;">👥</span>
+              <span style="background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </span>
               Registered Participants
             </h3>
             ${participantsList}
@@ -182,7 +227,15 @@ const sendConfirmationEmailHelper = async (emailData: {
           <!-- What to Bring -->
           <div style="background: #f8fafc; padding: 32px; border-radius: 20px; margin-bottom: 32px; border: 1px solid #e2e8f0;">
             <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
-              <span style="background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 16px;">🎒</span>
+              <span style="background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14,2 14,8 20,8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10,9 9,9 8,9"></polyline>
+                </svg>
+              </span>
               What to Bring
             </h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px; color: #4b5563;">
@@ -219,7 +272,13 @@ const sendConfirmationEmailHelper = async (emailData: {
           <!-- Important Notes -->
           <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(245, 101, 101, 0.1) 100%); padding: 24px; border-radius: 16px; border: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 32px;">
             <h4 style="margin: 0 0 12px 0; color: #dc2626; font-size: 16px; font-weight: 600; display: flex; align-items: center;">
-              <span style="margin-right: 8px; font-size: 18px;">⚠️</span>
+              <span style="margin-right: 8px; color: #dc2626;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+              </span>
               Important Reminders
             </h4>
             <ul style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.6;">
@@ -239,7 +298,7 @@ const sendConfirmationEmailHelper = async (emailData: {
               Contact us at <a href="mailto:info@muslimyouthretreat.org" style="color: #EEB541; text-decoration: none; font-weight: 600;">info@muslimyouthretreat.org</a>
             </p>
             <p style="margin: 0; color: #6b7280; font-size: 14px;">
-              We can't wait to see you at the retreat! 🌟
+              We can't wait to see you at the retreat!
             </p>
           </div>
         </div>
@@ -274,8 +333,9 @@ const sendConfirmationEmailHelper = async (emailData: {
   });
 
   const result = await resend.emails.send({
-    from: 'Muslim Youth Retreat <noreply@muslimyouthretreat.org>',
+    from: 'Muslim Youth Retreat <registration@muslimyouthretreat.org>',
     to: [recipientEmail],
+    replyTo: 'info@muslimyouthretreat.org',
     subject: subject,
     html: emailHtml,
   });
@@ -346,7 +406,12 @@ export const createPaymentIntent = onRequest(
 );
 
 // Save registration data
-export const saveRegistration = onCall(async (request) => {
+export const saveRegistration = onCall(
+  { 
+    memory: "512MiB",
+    timeoutSeconds: 120
+  },
+  async (request) => {
   try {
     const {registrationData, paymentIntentId} = request.data;
 
@@ -363,9 +428,22 @@ export const saveRegistration = onCall(async (request) => {
     logger.info(`Creating new registration: ${registrationId}`);
     const batch = db.batch();
 
+    // Clean children data first to prevent undefined values
+    const cleanChildren = registrationData.children?.map((child: any) => ({
+      name: child.name || '',
+      dateOfBirth: child.dateOfBirth || child.age || null,
+      gender: child.gender || '',
+      grade: child.grade || '',
+      dietary: child.dietary || '',
+      medical: child.medical || '',
+      // Keep old emergency contact fields for backward compatibility
+      emergencyContact: child.emergencyContact || '',
+      emergencyPhone: child.emergencyPhone || ''
+    })) || [];
+
     // Generate participant IDs first
     const participantIds: string[] = [];
-    for (let i = 0; i < registrationData.children.length; i++) {
+    for (let i = 0; i < cleanChildren.length; i++) {
       const participantId = `PRT_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       participantIds.push(participantId);
     }
@@ -386,7 +464,7 @@ export const saveRegistration = onCall(async (request) => {
         country: registrationData.parent.country,
       },
       participantIds: participantIds,
-      participantCount: registrationData.children.length,
+      participantCount: cleanChildren.length,
       active: true,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -394,8 +472,8 @@ export const saveRegistration = onCall(async (request) => {
     batch.set(guardianRef, guardianDoc);
 
     // Create participant documents
-    for (let i = 0; i < registrationData.children.length; i++) {
-      const child = registrationData.children[i];
+    for (let i = 0; i < cleanChildren.length; i++) {
+      const child = cleanChildren[i];
       const participantRef = db.collection("participants").doc();
       const participantId = participantIds[i];
       
@@ -404,7 +482,7 @@ export const saveRegistration = onCall(async (request) => {
         registrationId,
         guardianId: guardianDoc.guardianId,
         name: child.name,
-        age: parseInt(child.age),
+        dateOfBirth: child.dateOfBirth || (child.age ? parseInt(child.age) : null),
         gender: child.gender,
         grade: child.grade,
         dietary: child.dietary || "",
@@ -420,19 +498,75 @@ export const saveRegistration = onCall(async (request) => {
       batch.set(participantRef, participantDoc);
     }
 
+    // Generate waiver PDF (optional - registration continues even if this fails)
+    let waiverPdfUrl = null;
+    let waiverFileName = null;
+    
+    // Only attempt PDF generation if we have the required data
+    if (registrationData.agreement && registrationData.signature) {
+      try {
+        logger.info(`Generating waiver PDF for registration: ${registrationId}`);
+        
+        // Create the PDF with all registration data
+        const pdfResult = await generateWaiverPDFHelper({
+          registrationId,
+          registrationData: {
+            parent: registrationData.parent,
+            children: registrationData.children,
+            agreement: registrationData.agreement,
+            emergencyContact: registrationData.emergencyContact,
+            signature: registrationData.signature
+          }
+        });
+        
+        waiverPdfUrl = pdfResult.publicUrl;
+        waiverFileName = pdfResult.fileName;
+        
+        logger.info(`Waiver PDF generated successfully: ${waiverFileName}`);
+      } catch (pdfError) {
+        logger.error("Failed to generate waiver PDF (registration will continue):", pdfError);
+        // Explicitly set to null to ensure registration continues
+        waiverPdfUrl = null;
+        waiverFileName = null;
+      }
+    } else {
+      logger.info("Skipping PDF generation - missing agreement or signature data");
+    }
+
+    // Handle backward compatibility for old form structure  
+    // Clean up data to prevent undefined values in Firestore (v2)
+    const cleanEmergencyContact = registrationData.emergencyContact ? {
+      name: registrationData.emergencyContact.name || '',
+      phone: registrationData.emergencyContact.phone || '',
+      relationship: registrationData.emergencyContact.relationship || ''
+    } : {
+      // For old registrations, use the first child's emergency contact if available
+      name: registrationData.children?.[0]?.emergencyContact || '',
+      phone: registrationData.children?.[0]?.emergencyPhone || '',
+      relationship: 'Not specified'
+    };
+
+
     // Create or update main registration document
     const registrationDoc = {
       registrationId,
       paymentIntentId: paymentIntentId || null,
       guardianId: guardianDoc.guardianId,
       participantIds,
-      participantCount: registrationData.children.length,
+      participantCount: cleanChildren.length,
       parent: registrationData.parent,
-      children: registrationData.children,
-      agreement: registrationData.agreement,
+      children: cleanChildren,
+      agreement: registrationData.agreement || {},
+      emergencyContact: cleanEmergencyContact,
+      signature: registrationData.signature || '',
+      waiverPdf: {
+        fileName: waiverFileName || null,
+        publicUrl: waiverPdfUrl || null,
+        generatedAt: waiverPdfUrl ? admin.firestore.FieldValue.serverTimestamp() : null
+      },
       total: registrationData.total,
       status: paymentIntentId ? "paid" : "pending",
-      step: 4, // Payment step
+      step: 5, // Updated for new step count
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
@@ -451,9 +585,13 @@ export const saveRegistration = onCall(async (request) => {
       registrationId,
       docId: registrationRef.id,
     };
-  } catch (error) {
-    logger.error("Error saving registration:", error);
-    throw new Error("Failed to save registration");
+  } catch (error: any) {
+    logger.error("Error saving registration:", {
+      error: error.message,
+      stack: error.stack,
+      requestData: request.data
+    });
+    throw new Error(`Failed to save registration: ${error.message}`);
   }
 });
 
@@ -1093,6 +1231,357 @@ export const sendConfirmationEmail = onCall(
   }
 );
 
+// Helper function to generate waiver PDF (can be called internally)
+const generateWaiverPDFHelper = async (data: {
+  registrationId: string;
+  registrationData: any;
+}) => {
+  const { registrationId, registrationData } = data;
+
+  if (!registrationId || !registrationData) {
+    throw new Error("Registration ID and data are required");
+  }
+
+  try {
+
+  // Create PDF using jsPDF (professional legal document style)
+  const doc = new jsPDF();
+  
+  // Set professional font and black text
+  doc.setFont("times", "normal");
+  doc.setTextColor(0, 0, 0); // Black text for legal documents
+  
+  // Header - Professional legal document style
+  doc.setFontSize(18);
+  doc.setFont("times", "bold");
+  doc.text('MUSLIM YOUTH RETREAT 2025', 105, 25, { align: 'center' });
+  
+  doc.setFontSize(14);
+  doc.setFont("times", "normal");
+  doc.text('REGISTRATION WAIVER AND AGREEMENT', 105, 35, { align: 'center' });
+  
+  doc.setFontSize(10);
+  doc.text(`Document Generated: ${new Date().toLocaleDateString()}`, 105, 45, { align: 'center' });
+  
+  // Draw professional line
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.5);
+  doc.line(20, 50, 190, 50);
+  
+  let yPos = 60;
+  
+  // Registration Information Section
+  doc.setFontSize(12);
+  doc.setFont("times", "bold");
+  doc.text('REGISTRATION INFORMATION', 20, yPos);
+  yPos += 8;
+  
+  doc.setFontSize(10);
+  doc.setFont("times", "normal");
+  doc.text(`Registration ID: ${registrationId}`, 20, yPos);
+  doc.text(`Registration Date: ${new Date().toLocaleDateString()}`, 20, yPos + 6);
+  yPos += 20;
+  
+  // Parent Information Section
+  doc.setFontSize(12);
+  doc.setFont("times", "bold");
+  doc.text('PARENT/GUARDIAN INFORMATION', 20, yPos);
+  yPos += 8;
+  
+  doc.setFontSize(10);
+  doc.setFont("times", "normal");
+  doc.text(`Name: ${registrationData.parent?.name || '_________________________'}`, 20, yPos);
+  doc.text(`Email: ${registrationData.parent?.email || '_________________________'}`, 20, yPos + 6);
+  doc.text(`Phone: ${registrationData.parent?.phone || '_________________________'}`, 20, yPos + 12);
+  
+  const address = `${registrationData.parent?.address || ''} ${registrationData.parent?.apartment || ''}`.trim();
+  const cityState = `${registrationData.parent?.city || ''}, ${registrationData.parent?.state || ''} ${registrationData.parent?.zipCode || ''}`.trim();
+  doc.text(`Address: ${address || '_________________________'}`, 20, yPos + 18);
+  doc.text(`City, State, ZIP: ${cityState !== ', ' ? cityState : '_________________________'}`, 20, yPos + 24);
+  doc.text(`Country: ${registrationData.parent?.country || '_________________________'}`, 20, yPos + 30);
+  yPos += 45;
+  
+  // Emergency Contact Section
+  doc.setFontSize(12);
+  doc.setFont("times", "bold");
+  doc.text('EMERGENCY CONTACT INFORMATION', 20, yPos);
+  yPos += 8;
+  
+  doc.setFontSize(10);
+  doc.setFont("times", "normal");
+  doc.text(`Name: ${registrationData.emergencyContact?.name || '_________________________'}`, 20, yPos);
+  doc.text(`Phone: ${registrationData.emergencyContact?.phone || '_________________________'}`, 20, yPos + 6);
+  doc.text(`Relationship: ${registrationData.emergencyContact?.relationship || '_________________________'}`, 20, yPos + 12);
+  yPos += 25;
+  
+  // Participants Section
+  doc.setFontSize(12);
+  doc.setFont("times", "bold");
+  doc.text('PARTICIPANT INFORMATION', 20, yPos);
+  yPos += 8;
+  
+  registrationData.children?.forEach((child: any, index: number) => {
+    doc.setFontSize(11);
+    doc.setFont("times", "bold");
+    doc.text(`Participant ${index + 1}:`, 20, yPos);
+    yPos += 6;
+    
+    doc.setFontSize(10);
+    doc.setFont("times", "normal");
+    doc.text(`Name: ${child.name || '_________________________'}`, 25, yPos);
+    doc.text(`Date of Birth: ${child.dateOfBirth || child.age || '_________________________'}`, 25, yPos + 6);
+    doc.text(`Gender: ${child.gender || '_________________________'}`, 25, yPos + 12);
+    doc.text(`Grade: ${child.grade || '_________________________'}`, 25, yPos + 18);
+    doc.text(`Dietary Restrictions: ${child.dietary || 'None specified'}`, 25, yPos + 24);
+    if (child.medical) {
+      doc.text(`Medical Information: ${child.medical}`, 25, yPos + 30);
+      yPos += 40;
+    } else {
+      doc.text('Medical Information: None specified', 25, yPos + 30);
+      yPos += 40;
+    }
+    yPos += 8;
+  });
+  
+  // Check if we need a new page
+  if (yPos > 220) {
+    doc.addPage();
+    yPos = 30;
+  }
+  
+  // Informed Consent Section
+  doc.setFontSize(12);
+  doc.setFont("times", "bold");
+  doc.text('INFORMED CONSENT AND ACKNOWLEDGEMENT', 20, yPos);
+  yPos += 10;
+  
+  doc.setFontSize(9);
+  doc.setFont("times", "normal");
+  const consentText = doc.splitTextToSize(
+    'I hereby give my approval for my child\'s participation in any and all activities prepared by wISE Academy during the selected camp. In exchange for the acceptance of said child, I assume all risk and hazards incidental to the conduct of the activities, and release, absolve and hold harmless WISE Academy, the organizers and all their respective officers, agents, and representatives from any and all liability for injuries to said child arising out of traveling to, participating in, or returning from selected camp sessions.',
+    170
+  );
+  doc.text(consentText, 20, yPos);
+  yPos += consentText.length * 3 + 20; // Increased spacing from 8 to 20
+  
+  // Consent checkbox
+  doc.setFontSize(10);
+  doc.setFont("times", "bold");
+  if (registrationData.agreement?.informedConsent) {
+    doc.text('[X] I CONSENT', 20, yPos);
+    doc.text('[ ] I DO NOT CONSENT', 100, yPos);
+  } else {
+    doc.text('[ ] I CONSENT', 20, yPos);
+    doc.text('[X] I DO NOT CONSENT', 100, yPos);
+  }
+  yPos += 25; // Increased spacing after checkboxes
+  
+  // Medical Release (add new page if needed)
+  if (yPos > 180) {
+    doc.addPage();
+    yPos = 30;
+  }
+  
+  doc.setFontSize(12);
+  doc.setFont("times", "bold");
+  doc.text('MEDICAL RELEASE AND AUTHORIZATION', 20, yPos);
+  yPos += 10;
+  
+  doc.setFontSize(9);
+  doc.setFont("times", "normal");
+  const medicalText = doc.splitTextToSize(
+    'As Parent and/or Guardian of the named child, I hereby authorize the diagnosis and treatment by a qualified and licensed medical professional, of the minor child, in the event of a medical emergency, which in the opinion of the attending medical professional, requires immediate attention to prevent further endangerment of the minor\'s life, physical disfigurement, physical impairment, or other undue pain, suffering or discomfort, if delayed. Permission is hereby granted to the attending physician to proceed with any medical or minor surgical treatment, x-ray examination and immunizations for the named child. In the event of an emergency arising out of serious illness, the need for major surgery, or significant accidental injury, I understand that every attempt will be made by the attending physician to contact me in the most expeditious way possible. This authorization is granted only after a reasonable effort has been made to reach me. Permission is also granted to WISE Academy, the organizers and its affiliates including Facilitators, Volunteers, and Camp Staff to provide the needed emergency treatment prior to the child\'s admission to the medical facility. Release authorized on the dates and/or duration of the camp sessions. This release is authorized and executed of my own free will, with the sole purpose of authorizing medical treatment under emergency circumstances, for the protection of life and limb of the named minor child, in my absence.',
+    170
+  );
+  doc.text(medicalText, 20, yPos);
+  yPos += medicalText.length * 3 + 20; // Increased spacing from 8 to 20
+  
+  // Medical consent checkbox
+  doc.setFontSize(10);
+  doc.setFont("times", "bold");
+  if (registrationData.agreement?.medicalRelease) {
+    doc.text('[X] I CONSENT', 20, yPos);
+    doc.text('[ ] I DO NOT CONSENT', 100, yPos);
+  } else {
+    doc.text('[ ] I CONSENT', 20, yPos);
+    doc.text('[X] I DO NOT CONSENT', 100, yPos);
+  }
+  yPos += 25; // Increased spacing after checkboxes
+  
+  // Signature section
+  doc.setFontSize(12);
+  doc.setFont("times", "bold");
+  doc.text('ELECTRONIC SIGNATURE CONFIRMATION', 20, yPos);
+  yPos += 8;
+  
+  doc.setFontSize(10);
+  doc.setFont("times", "normal");
+  doc.text('BY ACKNOWLEDGING AND SIGNING BELOW, I AM DELIVERING AN ELECTRONIC SIGNATURE', 20, yPos);
+  doc.text('THAT WILL HAVE THE SAME EFFECT AS AN ORIGINAL MANUAL PAPER SIGNATURE.', 20, yPos + 6);
+  doc.text('THE ELECTRONIC SIGNATURE WILL BE EQUALLY AS BINDING AS AN ORIGINAL', 20, yPos + 12);
+  doc.text('MANUAL PAPER SIGNATURE.', 20, yPos + 18);
+  yPos += 30;
+  
+  doc.text(`Parent/Guardian Name: ${registrationData.parent?.name || '_________________________'}`, 20, yPos);
+  doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, yPos + 8);
+  yPos += 20;
+  
+  // Add actual signature image if provided
+  if (registrationData.signature && registrationData.signature.startsWith('data:image/')) {
+    try {
+      doc.text('Parent/Guardian Signature:', 20, yPos);
+      yPos += 8;
+      
+      // Add the signature image
+      doc.addImage(registrationData.signature, 'PNG', 20, yPos, 80, 25);
+      yPos += 35;
+      
+      doc.setFontSize(8);
+      doc.text('(Electronic Signature)', 20, yPos);
+      yPos += 10;
+    } catch (signatureError) {
+      logger.warn('Failed to add signature image to PDF:', signatureError);
+      doc.text('Signature: [Electronic signature provided but could not be embedded]', 20, yPos);
+      yPos += 15;
+    }
+  } else {
+    doc.text('Signature: ___________________________________', 20, yPos);
+    doc.setFontSize(8);
+    doc.text('(No electronic signature provided)', 20, yPos + 8);
+    yPos += 20;
+  }
+  
+  // Professional Footer
+  // Add new page if needed for footer
+  if (yPos > 250) {
+    doc.addPage();
+    yPos = 30;
+  }
+  
+  yPos += 15;
+  doc.setFontSize(8);
+  doc.setFont("times", "normal");
+  doc.setTextColor(0, 0, 0);
+  doc.text('This document was generated electronically by the Muslim Youth Retreat 2025 registration system.', 20, yPos);
+  doc.text(`Document generated on: ${new Date().toLocaleString()}`, 20, yPos + 6);
+  doc.text('For questions, contact: info@muslimyouthretreat.org', 20, yPos + 12);
+  
+  // Add page numbers
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.text(`Page ${i} of ${pageCount}`, 105, 285, { align: 'center' });
+  }
+  
+  // Generate PDF buffer
+  const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+
+    // Store PDF in Firebase Storage
+    const bucket = getStorage().bucket();
+    const fileName = `waivers/${registrationId}_waiver_${Date.now()}.pdf`;
+    const file = bucket.file(fileName);
+
+    await file.save(pdfBuffer, {
+      metadata: {
+        contentType: 'application/pdf',
+        metadata: {
+          registrationId: registrationId,
+          parentName: registrationData.parent?.name || 'Unknown',
+          generatedAt: new Date().toISOString()
+        }
+      }
+    });
+
+    // Make the file publicly accessible for download
+    await file.makePublic();
+
+    // Get the public URL
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+    logger.info(`Waiver PDF generated and stored: ${fileName}`);
+
+    return {
+      success: true,
+      fileName: fileName,
+      publicUrl: publicUrl,
+      message: "Waiver PDF generated and stored successfully"
+    };
+
+  } catch (error: any) {
+    logger.error("Error generating waiver PDF:", error);
+    throw new Error(`Failed to generate waiver PDF: ${error.message}`);
+  }
+};
+
+// Generate and store waiver PDF (public cloud function)
+export const generateWaiverPDF = onCall(
+  { 
+    memory: "512MiB",
+    timeoutSeconds: 120
+  },
+  async (request) => {
+  try {
+    return await generateWaiverPDFHelper(request.data);
+  } catch (error: any) {
+    logger.error("Error in generateWaiverPDF cloud function:", error);
+    throw new Error(`Failed to generate waiver PDF: ${error.message}`);
+  }
+});
+
+// Get all waivers (for admin portal)
+export const getWaivers = onCall(async (request) => {
+  try {
+    const db = admin.firestore();
+    
+    // Get all registrations first, then filter for those with waivers
+    const snapshot = await db
+        .collection("registrations")
+        .orderBy("createdAt", "desc")
+        .get();
+
+    const waivers = snapshot.docs
+      .map((doc) => {
+        const data = doc.data();
+        
+        // Only include registrations that have waiver PDFs
+        if (!data.waiverPdf?.publicUrl) {
+          return null;
+        }
+        
+        return {
+          id: doc.id,
+          registrationId: data.registrationId,
+          parentName: data.parent?.name,
+          parentEmail: data.parent?.email,
+          participantCount: data.participantCount,
+          waiverPdf: data.waiverPdf,
+          status: data.status,
+          createdAt: data.createdAt,
+          children: data.children?.map((child: any) => ({
+            name: child.name,
+            dateOfBirth: child.dateOfBirth || child.age,
+            gender: child.gender
+          })) || []
+        };
+      })
+      .filter(waiver => waiver !== null); // Remove null entries
+
+    logger.info(`Found ${waivers.length} waivers out of ${snapshot.docs.length} registrations`);
+
+    return {
+      success: true,
+      waivers,
+    };
+  } catch (error: any) {
+    logger.error("Error fetching waivers:", {
+      error: error.message,
+      stack: error.stack
+    });
+    throw new Error(`Failed to fetch waivers: ${error.message}`);
+  }
+});
+
 // Delete registration and all related documents
 export const deleteRegistration = onCall(async (request) => {
   logger.info("Delete registration function called", { data: request.data });
@@ -1173,5 +1662,91 @@ export const deleteRegistration = onCall(async (request) => {
   } catch (error: any) {
     logger.error("Error deleting registration:", error);
     throw new Error(`Failed to delete registration: ${error.message}`);
+  }
+});
+
+// Download all waivers as ZIP
+export const downloadAllWaivers = onCall({
+  memory: "512MiB",
+  timeoutSeconds: 120,
+  cors: true
+}, async (request) => {
+  try {
+    const db = admin.firestore();
+    const bucket = getStorage().bucket();
+
+    // Fetch all registrations with waiver PDFs
+    const registrationsSnapshot = await db.collection('registrations').get();
+    const waivers = registrationsSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as any))
+      .filter((registration: any) => registration.waiverPdf?.publicUrl);
+
+    if (waivers.length === 0) {
+      throw new Error("No waivers found");
+    }
+
+    // Create a new JSZip instance
+    const zip = new JSZip();
+
+    // Download each PDF and add to ZIP
+    for (const waiver of waivers) {
+      try {
+        const fileName = (waiver as any).waiverPdf.fileName || `waiver-${waiver.id}.pdf`;
+        const file = bucket.file(fileName);
+        
+        // Download the file
+        const [fileBuffer] = await file.download();
+        
+        // Add to ZIP with a descriptive name
+        const parentName = (waiver as any).parent?.name || 'Unknown';
+        const zipFileName = `${parentName.replace(/[^a-zA-Z0-9]/g, '_')}_waiver_${waiver.id}.pdf`;
+        zip.file(zipFileName, fileBuffer);
+        
+        logger.info(`Added ${zipFileName} to ZIP`);
+      } catch (fileError) {
+        logger.warn(`Failed to add waiver ${waiver.id} to ZIP:`, fileError);
+        // Continue with other files even if one fails
+      }
+    }
+
+    // Generate the ZIP file
+    const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+    
+    // Upload ZIP to Firebase Storage
+    const zipFileName = `waivers_export_${new Date().toISOString().split('T')[0]}.zip`;
+    const zipFile = bucket.file(`exports/${zipFileName}`);
+    
+    await zipFile.save(zipBuffer, {
+      metadata: {
+        contentType: 'application/zip',
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          waiverCount: waivers.length.toString()
+        }
+      }
+    });
+
+    // Make the file publicly accessible
+    await zipFile.makePublic();
+    
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/exports/${zipFileName}`;
+
+    logger.info(`ZIP file created successfully: ${publicUrl}`);
+
+    return {
+      success: true,
+      downloadUrl: publicUrl,
+      fileName: zipFileName,
+      waiverCount: waivers.length,
+      message: `ZIP file created with ${waivers.length} waivers`
+    };
+
+  } catch (error: any) {
+    logger.error("Error creating waivers ZIP:", error);
+    return {
+      success: false,
+      error: error.message,
+    };
+    throw new Error(`Failed to create waivers ZIP: ${error.message}`);
   }
 });

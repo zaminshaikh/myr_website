@@ -123,6 +123,27 @@ const HomePage = () => {
         </div>
       </section>
 
+      {/* Why This Retreat Matters Section */}
+      <section className="importance-section">
+        <div className="container">
+          <div className="importance-card">
+            <h3>Why This Retreat Matters</h3>
+            <p>
+              Working with youth has shown that one of their greatest challenges is understanding their own <strong>IDENTITY</strong> and <strong>PURPOSE</strong>. Without this, fears take hold such as not belonging, being misunderstood, or falling short. At the root of these fears is the desire for acceptance.
+            </p>
+            <p>
+              This is why <strong>EMPATHY</strong> and connection are so important. When youth are surrounded by people who see and value them, they gain courage to grow into who they are meant to be.
+            </p>
+            <p>
+              Strength of character, grounded in <strong>IDENTITY</strong> and <strong>PURPOSE</strong>, helps young people make choices that reflect their best selves.
+            </p>
+            <p>
+              By enrolling, you create opportunities for youth to be guided with <strong>EMPATHY</strong>, to strengthen their sense of self, and to move with clarity and confidence in today's world.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Price Includes Section */}
       <section className="price-section">
         <div className="container">
@@ -169,26 +190,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Why Important Section */}
-      <section className="importance-section">
-        <div className="container">
-          <div className="importance-card">
-            <h3>Why is this important?</h3>
-            <p>
-              Working with youth has shown that one of their greatest challenges is understanding their own <strong>IDENTITY</strong> and <strong>PURPOSE</strong>. Without this, fears take hold such as not belonging, being misunderstood, or falling short. At the root of these fears is the desire for acceptance.
-            </p>
-            <p>
-              This is why <strong>EMPATHY</strong> and connection are so important. When youth are surrounded by people who see and value them, they gain courage to grow into who they are meant to be.
-            </p>
-            <p>
-              Strength of character, grounded in <strong>IDENTITY</strong> and <strong>PURPOSE</strong>, helps young people make choices that reflect their best selves.
-            </p>
-            <p>
-              By enrolling, you create opportunities for youth to be guided with <strong>EMPATHY</strong>, to strengthen their sense of self, and to move with clarity and confidence in today's world.
-            </p>
-          </div>
-        </div>
-      </section>
 
       {/* Schedule Section */}
       <section id="schedule" className="schedule-section">
@@ -279,6 +280,11 @@ const HomePage = () => {
             <div className="faq-item">
               <h4>When is the registration deadline?</h4>
               <p><em>November 17th, 2025. All payments must be received by this date as we need to provide a full headcount for accommodations and catering.</em></p>
+            </div>
+            
+            <div className="faq-item">
+              <h4>Do you offer a sibling discount?</h4>
+              <p><em>Yes! Families registering more than one child will receive $25 off each additional sibling's registration.</em></p>
             </div>
             
             <div className="faq-item">

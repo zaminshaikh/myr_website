@@ -802,3 +802,163 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Simplified Waiver Management Styles */
+.waivers-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.waivers-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 0;
+}
+
+.download-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #557CBA 0%, #4A6BA8 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(85, 124, 186, 0.3);
+}
+
+.download-all-btn:hover {
+  background: linear-gradient(135deg, #4A6BA8 0%, #3E5A96 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(85, 124, 186, 0.4);
+}
+
+.waivers-table {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.waivers-table .table-header {
+  background: #f8fafc;
+  border-bottom: 2px solid #e5e7eb;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.waivers-table .table-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.waivers-table .table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.waivers-table .table-row:hover {
+  background: #f8fafc;
+}
+
+.waivers-table .table-row:last-child {
+  border-bottom: none;
+}
+
+.document-name strong {
+  color: #1f2937;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.document-details {
+  color: #6b7280;
+  font-size: 12px;
+  margin: 0;
+  font-family: monospace;
+}
+
+.date-info {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.view-waiver-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%);
+  color: white;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(238, 181, 65, 0.3);
+}
+
+.view-waiver-btn:hover {
+  background: linear-gradient(135deg, #D4A43A 0%, #C19A35 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(238, 181, 65, 0.4);
+  text-decoration: none;
+  color: white;
+}
+
+.no-document {
+  color: #ef4444;
+  font-style: italic;
+  font-size: 13px;
+}
+
+/* Responsive styles for simplified waivers table */
+@media (max-width: 768px) {
+  .waivers-table .table-header,
+  .waivers-table .table-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .waivers-table .table-header {
+    display: none; /* Hide header on mobile */
+  }
+  
+  .waivers-table .table-row {
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: white;
+  }
+  
+  .document-name {
+    margin-bottom: 8px;
+  }
+  
+  .date-info {
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  
+  .download-all-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

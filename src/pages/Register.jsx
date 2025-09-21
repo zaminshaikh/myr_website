@@ -120,7 +120,7 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
             progressData: {
               ...registrationData,
               total: total,
-              step: 4,
+              step: 5,
               paymentError: stripeError.message,
               paymentAttemptedAt: new Date().toISOString()
             }
@@ -235,15 +235,21 @@ export default function Register() {
   const [children, setChildren] = useState([
     { 
       name: '', 
-      age: '', 
+      dateOfBirth: '', 
       gender: '', 
       grade: '',
       dietary: '',
-      medical: '',
-      emergencyContact: '',
-      emergencyPhone: ''
+      medical: ''
     },
   ]);
+
+  // Emergency contact information (shared across all participants)
+  const [emergencyContact, setEmergencyContact] = useState({
+    name: '',
+    phone: '',
+    relationship: ''
+  });
+  const [customRelationship, setCustomRelationship] = useState('');
   const [parent, setParent] = useState({ 
     name: '', 
     email: '', 
@@ -257,11 +263,11 @@ export default function Register() {
   });
   const [emailError, setEmailError] = useState('');
   const [agreement, setAgreement] = useState({
-    liability: false,
-    medical: false,
-    photos: false,
-    conduct: false
+    informedConsent: false,
+    medicalRelease: false
   });
+  
+  const [signature, setSignature] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [registrationId, setRegistrationId] = useState('');
   const [testMode, setTestMode] = useState(false);
@@ -383,7 +389,7 @@ export default function Register() {
     // Don't auto-save if we haven't started or if we're showing the continue dialog
     if (!hasSavedData && !showContinueDialog && (
       parent.name || parent.email || parent.phone || 
-      children.some(child => child.name || child.age) ||
+      children.some(child => child.name || child.dateOfBirth) ||
       Object.values(agreement).some(val => val)
     )) {
       const timeoutId = setTimeout(() => {
@@ -425,18 +431,20 @@ export default function Register() {
     setAgreement(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleEmergencyContactChange = (field, value) => {
+    setEmergencyContact(prev => ({ ...prev, [field]: value }));
+  };
+
   const addChild = () => {
     setChildren((prev) => [
       ...prev,
       { 
         name: '', 
-        age: '', 
+        dateOfBirth: '', 
         gender: '', 
         grade: '',
         dietary: '',
-        medical: '',
-        emergencyContact: parent.name || '',
-        emergencyPhone: parent.phone || ''
+        medical: ''
       },
     ]);
   };
@@ -447,19 +455,10 @@ export default function Register() {
     }
   };
 
-  const total = children.length > 1 ? 250 * children.length : 275;
+  // First participant $275, additional participants $250 each
+  const total = children.length > 0 ? 275 + (children.length - 1) * 250 : 0;
 
   const handleNext = () => {
-    // Auto-fill emergency contact fields when moving to step 2
-    if (step === 1) {
-      setChildren((prev) => 
-        prev.map(child => ({
-          ...child,
-          emergencyContact: child.emergencyContact || parent.name,
-          emergencyPhone: child.emergencyPhone || parent.phone
-        }))
-      );
-    }
     setStep(step + 1);
   };
 
@@ -513,13 +512,92 @@ export default function Register() {
 
   const isStep2Valid = () => {
     return children.every(child => 
-      child.name && child.age && child.gender && child.grade && 
-      child.emergencyContact && child.emergencyPhone
+      child.name && child.dateOfBirth && child.gender && child.grade
     );
   };
 
   const isStep3Valid = () => {
-    return agreement.liability && agreement.medical && agreement.photos && agreement.conduct;
+    const hasRelationship = emergencyContact.relationship && 
+      (emergencyContact.relationship !== 'Other' || customRelationship.trim());
+    return emergencyContact.name && emergencyContact.phone && hasRelationship;
+  };
+
+  const isStep4Valid = () => {
+    return agreement.informedConsent === true && agreement.medicalRelease === true && signature;
+  };
+
+  // Signature functionality
+  React.useEffect(() => {
+    const canvas = document.getElementById('signature-canvas');
+    if (canvas && step === 4) {
+      const ctx = canvas.getContext('2d');
+      let isDrawing = false;
+
+      const startDrawing = (e) => {
+        isDrawing = true;
+        const rect = canvas.getBoundingClientRect();
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+      };
+
+      const draw = (e) => {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.stroke();
+        setSignature(canvas.toDataURL());
+      };
+
+      const stopDrawing = () => {
+        isDrawing = false;
+        ctx.beginPath();
+      };
+
+      canvas.addEventListener('mousedown', startDrawing);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDrawing);
+
+      // Touch events for mobile
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousedown', {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+      });
+
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const mouseEvent = new MouseEvent('mousemove', {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        canvas.dispatchEvent(mouseEvent);
+      });
+
+      canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        const mouseEvent = new MouseEvent('mouseup', {});
+        canvas.dispatchEvent(mouseEvent);
+      });
+
+      return () => {
+        canvas.removeEventListener('mousedown', startDrawing);
+        canvas.removeEventListener('mousemove', draw);
+        canvas.removeEventListener('mouseup', stopDrawing);
+      };
+    }
+  }, [step]);
+
+  const clearSignature = () => {
+    const canvas = document.getElementById('signature-canvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setSignature('');
+    }
   };
 
   // Country and state/province data
@@ -596,6 +674,7 @@ export default function Register() {
           <div className={`progress-step ${step >= 2 ? 'active' : ''}`}>2</div>
           <div className={`progress-step ${step >= 3 ? 'active' : ''}`}>3</div>
           <div className={`progress-step ${step >= 4 ? 'active' : ''}`}>4</div>
+          <div className={`progress-step ${step >= 5 ? 'active' : ''}`}>5</div>
         </div>
       </div>
 
@@ -811,14 +890,12 @@ export default function Register() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Age *</label>
+                    <label>Date of Birth *</label>
                     <input 
-                      type="number" 
-                      min="6" 
-                      max="18" 
+                      type="date" 
                       required
-                      value={child.age} 
-                      onChange={e => handleChildChange(idx, 'age', e.target.value)} 
+                      value={child.dateOfBirth} 
+                      onChange={e => handleChildChange(idx, 'dateOfBirth', e.target.value)} 
                     />
                   </div>
                   <div className="form-group">
@@ -868,33 +945,6 @@ export default function Register() {
                       rows="3"
                     />
                   </div>
-                  <div className="form-group">
-                    <label>Emergency Contact Name *</label>
-                    <input 
-                      type="text"
-                      required 
-                      value={child.emergencyContact} 
-                      onChange={e => handleChildChange(idx, 'emergencyContact', e.target.value)} 
-                      placeholder="Auto-filled from parent/guardian info"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Emergency Contact Phone *</label>
-                    <InputMask
-                      mask="(999) 999-9999"
-                      value={child.emergencyPhone}
-                      onChange={e => handleChildChange(idx, 'emergencyPhone', e.target.value)}
-                    >
-                      {(inputProps) => (
-                        <input 
-                          {...inputProps}
-                          type="tel"
-                          required
-                          placeholder="(123) 456-7890"
-                        />
-                      )}
-                    </InputMask>
-                  </div>
                 </div>
               </div>
             ))}
@@ -914,54 +964,193 @@ export default function Register() {
 
         {step === 3 && (
           <div className="form-step">
+            <h2>Emergency Contact Information</h2>
+            <p className="section-description">
+              List a contact, other than yourself that would be available if you are not in case of emergency.
+            </p>
+            
+            <div className="emergency-contact-form">
+              <div className="form-group">
+                <label>Emergency Contact Name *</label>
+                <input 
+                  type="text"
+                  required 
+                  value={emergencyContact.name} 
+                  onChange={e => handleEmergencyContactChange('name', e.target.value)} 
+                  placeholder="Full name of emergency contact"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Emergency Contact Phone *</label>
+                <InputMask
+                  mask="(999) 999-9999"
+                  value={emergencyContact.phone}
+                  onChange={e => handleEmergencyContactChange('phone', e.target.value)}
+                >
+                  {(inputProps) => (
+                    <input 
+                      {...inputProps}
+                      type="tel"
+                      required
+                      placeholder="(123) 456-7890"
+                    />
+                  )}
+                </InputMask>
+              </div>
+              
+              <div className="form-group">
+                <label>Emergency Contact Relationship *</label>
+                <select 
+                  required 
+                  value={emergencyContact.relationship} 
+                  onChange={e => handleEmergencyContactChange('relationship', e.target.value)}
+                >
+                  <option value="">Select relationship</option>
+                  <option value="Parent">Parent</option>
+                  <option value="Grandparent">Grandparent</option>
+                  <option value="Sibling">Sibling</option>
+                  <option value="Relative">Relative</option>
+                  <option value="Friend">Friend</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {emergencyContact.relationship === 'Other' && (
+                <div className="form-group">
+                  <label>Please specify relationship *</label>
+                  <input
+                    type="text"
+                    required
+                    value={customRelationship}
+                    onChange={e => setCustomRelationship(e.target.value)}
+                    placeholder="Enter relationship"
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="form-actions">
+              <button type="button" onClick={handleBack} className="back-btn">Back</button>
+              <button 
+                type="button" 
+                onClick={handleNext} 
+                disabled={!isStep3Valid()}
+                className="next-btn"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="form-step">
             <h2>Agreements & Waivers</h2>
-            <div className="agreements">
-              <div className="agreement-item">
-                <label className="checkbox-label">
+            {/* Informed Consent and Acknowledgement */}
+            <div className="agreement-section">
+              <h3>Informed Consent and Acknowledgement</h3>
+              <div className="agreement-text">
+                <p>
+                  I hereby give my approval for my child's participation in any and all activities prepared by wISE Academy during the selected camp. In exchange for the acceptance of said child, I assume all risk and hazards incidental to the conduct of the activities, and release, absolve and hold harmless WISE Academy, the organizers and all their respective officers, agents, and representatives from any and all liability for injuries to said child arising out of traveling to, participating in, or returning from selected camp sessions.
+                </p>
+              </div>
+              <div className="consent-options">
+                <label className="radio-label">
                   <input 
-                    type="checkbox"
-                    checked={agreement.liability}
-                    onChange={e => handleAgreementChange('liability', e.target.checked)}
+                    type="radio"
+                    name="informedConsent"
+                    checked={agreement.informedConsent === true}
+                    onChange={e => handleAgreementChange('informedConsent', true)}
                   />
-                  <span className="checkmark"></span>
-                  I understand and agree to the liability waiver and release of claims. I acknowledge that participation in outdoor activities involves inherent risks.
+                  <span className="radio-mark"></span>
+                  I Consent
+                </label>
+                <label className="radio-label">
+                  <input 
+                    type="radio"
+                    name="informedConsent"
+                    checked={agreement.informedConsent === false}
+                    onChange={e => handleAgreementChange('informedConsent', false)}
+                  />
+                  <span className="radio-mark"></span>
+                  I Do Not Consent
                 </label>
               </div>
-              
-              <div className="agreement-item">
-                <label className="checkbox-label">
+            </div>
+
+            {/* Medical Release and Authorization */}
+            <div className="agreement-section">
+              <h3>Medical Release and Authorization</h3>
+              <div className="agreement-text">
+                <p>
+                  As Parent and/or Guardian of the named child, I hereby authorize the diagnosis and treatment by a qualified and licensed medical professional, of the minor child, in the event of a medical emergency, which in the opinion of the attending medical professional, requires immediate attention to prevent further endangerment of the minor's life, physical disfigurement, physical impairment, or other undue pain, suffering or discomfort, if delayed.
+                </p>
+                <p>
+                  Permission is hereby granted to the attending physician to proceed with any medical or minor surgical treatment, x-ray examination and immunizations for the named child. In the event of an emergency arising out of serious illness, the need for major surgery, or significant accidental injury, I understand that every attempt will be made by the attending physician to contact me in the most expeditious way possible. This authorization is granted only after a reasonable effort has been made to reach me.
+                </p>
+                <p>
+                  Permission is also granted to WISE Academy, the organizers and its affiliates including Facilitators, Volunteers, and Camp Staff to provide the needed emergency treatment prior to the child's admission to the medical facility.
+                </p>
+                <p>
+                  Release authorized on the dates and/or duration of the camp sessions.
+                </p>
+                <p>
+                  This release is authorized and executed of my own free will, with the sole purpose of authorizing medical treatment under emergency circumstances, for the protection of life and limb of the named minor child, in my absence.
+                </p>
+              </div>
+              <div className="consent-options">
+                <label className="radio-label">
                   <input 
-                    type="checkbox"
-                    checked={agreement.medical}
-                    onChange={e => handleAgreementChange('medical', e.target.checked)}
+                    type="radio"
+                    name="medicalRelease"
+                    checked={agreement.medicalRelease === true}
+                    onChange={e => handleAgreementChange('medicalRelease', true)}
                   />
-                  <span className="checkmark"></span>
-                  I authorize the retreat organizers to seek emergency medical treatment for my child if necessary.
+                  <span className="radio-mark"></span>
+                  I Consent
+                </label>
+                <label className="radio-label">
+                  <input 
+                    type="radio"
+                    name="medicalRelease"
+                    checked={agreement.medicalRelease === false}
+                    onChange={e => handleAgreementChange('medicalRelease', false)}
+                  />
+                  <span className="radio-mark"></span>
+                  I Do Not Consent
                 </label>
               </div>
-              
-              <div className="agreement-item">
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox"
-                    checked={agreement.photos}
-                    onChange={e => handleAgreementChange('photos', e.target.checked)}
-                  />
-                  <span className="checkmark"></span>
-                  I give permission for my child to be photographed/videotaped for promotional materials.
-                </label>
+            </div>
+
+            {/* Confirmation and Signature */}
+            <div className="agreement-section">
+              <h3>Confirmation</h3>
+              <div className="agreement-text">
+                <p>
+                  BY ACKNOWLEDGING AND SIGNING BELOW, I AM DELIVERING AN ELECTRONIC SIGNATURE THAT WILL HAVE THE SAME EFFECT AS AN ORIGINAL MANUAL PAPER SIGNATURE. THE ELECTRONIC SIGNATURE WILL BE EQUALLY AS BINDING AS AN ORIGINAL MANUAL PAPER SIGNATURE.
+                </p>
               </div>
               
-              <div className="agreement-item">
-                <label className="checkbox-label">
-                  <input 
-                    type="checkbox"
-                    checked={agreement.conduct}
-                    onChange={e => handleAgreementChange('conduct', e.target.checked)}
-                  />
-                  <span className="checkmark"></span>
-                  I agree that my child will follow the retreat's code of conduct and Islamic guidelines.
-                </label>
+              <div className="signature-section">
+                <label>Parent / Guardian Signature *</label>
+                <div className="signature-box">
+                  <canvas 
+                    id="signature-canvas"
+                    width="400" 
+                    height="150"
+                    style={{border: '2px solid #ddd', borderRadius: '8px', cursor: 'crosshair'}}
+                  ></canvas>
+                  <div className="signature-controls">
+                    <button 
+                      type="button" 
+                      onClick={() => clearSignature()}
+                      className="clear-signature-btn"
+                    >
+                      Clear Signature
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -969,9 +1158,14 @@ export default function Register() {
               <h3>Registration Summary</h3>
               <div className="pricing-details">
                 <p>Number of participants: {children.length}</p>
-                <p>Price per participant: ${children.length > 1 ? '250' : '275'}</p>
-                {children.length > 1 && (
-                  <p className="discount-note">Multi-child discount applied!</p>
+                {children.length > 1 ? (
+                  <>
+                    <p>First participant: $275</p>
+                    <p>Additional participants ({children.length - 1}): ${(children.length - 1) * 250}</p>
+                    <p className="discount-note">Additional participant discount applied!</p>
+                  </>
+                ) : (
+                  <p>Price per participant: $275</p>
                 )}
                 <div className="total-price">
                   <strong>Total: ${total}</strong>
@@ -984,7 +1178,7 @@ export default function Register() {
               <button 
                 type="button" 
                 onClick={handleNext} 
-                disabled={!isStep3Valid()}
+                disabled={!isStep4Valid()}
                 className="next-btn"
               >
                 Proceed to Payment
@@ -993,7 +1187,7 @@ export default function Register() {
           </div>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <div className="form-step">
             <h2>Payment Information</h2>
             {testMode && (
@@ -1021,7 +1215,16 @@ export default function Register() {
             
             <Elements stripe={stripePromise}>
               <CheckoutForm 
-                registrationData={{ parent, children, agreement }}
+                registrationData={{ 
+                  parent, 
+                  children, 
+                  agreement, 
+                  emergencyContact: {
+                    ...emergencyContact,
+                    relationship: emergencyContact.relationship === 'Other' ? customRelationship : emergencyContact.relationship
+                  }, 
+                  signature 
+                }}
                 total={total}
                 onSuccess={handlePaymentSuccess}
               />

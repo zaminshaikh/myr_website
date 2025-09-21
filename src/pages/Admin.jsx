@@ -13,6 +13,7 @@ const Admin = () => {
   const [guardians, setGuardians] = useState([]);
   const [participants, setParticipants] = useState([]);
   const [savedRegistrations, setSavedRegistrations] = useState([]);
+  const [waivers, setWaivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,7 +34,8 @@ const Admin = () => {
         fetchRegistrations(),
         fetchGuardians(), 
         fetchParticipants(),
-        fetchSavedRegistrations()
+        fetchSavedRegistrations(),
+        fetchWaivers()
       ]);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -87,6 +89,23 @@ const Admin = () => {
     }
   };
 
+  const fetchWaivers = async () => {
+    try {
+      const getWaivers = httpsCallable(functions, 'getWaivers');
+      const result = await getWaivers();
+      
+      if (result.data.success) {
+        setWaivers(result.data.waivers || []);
+      } else {
+        console.warn('Failed to fetch waivers:', result.data);
+        setWaivers([]); // Set empty array instead of throwing error
+      }
+    } catch (error) {
+      console.warn('Error fetching waivers (setting empty array):', error);
+      setWaivers([]); // Set empty array to prevent admin panel from breaking
+    }
+  };
+
   // Filter functions for each data type
   const filteredRegistrations = registrations.filter(registration => {
     const matchesSearch = 
@@ -133,6 +152,18 @@ const Admin = () => {
       saved.parent?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       saved.savedRegistrationId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       saved.children?.some(child => 
+        child.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    
+    return matchesSearch;
+  });
+
+  const filteredWaivers = waivers.filter(waiver => {
+    const matchesSearch = 
+      waiver.parentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      waiver.parentEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      waiver.registrationId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      waiver.children?.some(child => 
         child.name?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     
@@ -230,12 +261,12 @@ const Admin = () => {
   };
 
   const exportParticipantsCSV = () => {
-    const headers = ['participantId', 'name', 'age', 'grade', 'gender', 'guardianName', 'guardianEmail', 'guardianPhone', 'emergencyContactName', 'emergencyContactPhone', 'dietary', 'medical', 'createdAt'];
+    const headers = ['participantId', 'name', 'dob', 'grade', 'gender', 'guardianName', 'guardianEmail', 'guardianPhone', 'emergencyContactName', 'emergencyContactPhone', 'dietary', 'medical', 'createdAt'];
     
     const csvData = participants.map(participant => ({
       participantId: participant.participantId || '',
       name: participant.name || '',
-      age: participant.age || '',
+      dob: participant.dateOfBirth || participant.age || '',
       grade: participant.grade || '',
       gender: participant.gender || '',
       guardianName: participant.guardian?.name || '',
@@ -431,6 +462,8 @@ const Admin = () => {
         return filteredParticipants;
       case 'saved':
         return filteredSavedRegistrations;
+      case 'waivers':
+        return filteredWaivers;
       default:
         return [];
     }
@@ -446,8 +479,55 @@ const Admin = () => {
         return 'Search by participant name or guardian...';
       case 'saved':
         return 'Search by saved registration ID, guardian name, or participant name...';
+      case 'waivers':
+        return 'Search by registration ID, parent name, or participant name...';
       default:
         return 'Search...';
+    }
+  };
+
+  const downloadAllWaivers = async () => {
+    try {
+      if (filteredWaivers.length === 0) {
+        alert('No waivers to download');
+        return;
+      }
+
+      const confirmed = window.confirm(`This will create a ZIP file with ${filteredWaivers.length} waivers. Continue?`);
+      if (!confirmed) return;
+
+      // Show loading state
+      const button = document.querySelector('.download-all-btn');
+      const originalText = button.textContent;
+      button.textContent = 'Creating ZIP...';
+      button.disabled = true;
+
+      const downloadAllWaiversFunc = httpsCallable(functions, 'downloadAllWaivers');
+      const result = await downloadAllWaiversFunc();
+
+      if (result.data.success) {
+        // Create a temporary link to download the ZIP file
+        const link = document.createElement('a');
+        link.href = result.data.downloadUrl;
+        link.download = result.data.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert(`ZIP file created successfully with ${result.data.waiverCount} waivers!`);
+      } else {
+        throw new Error(result.data.error || 'Failed to create ZIP file');
+      }
+    } catch (error) {
+      console.error('Error downloading waivers:', error);
+      alert(`Failed to create ZIP file: ${error.message}`);
+    } finally {
+      // Reset button state
+      const button = document.querySelector('.download-all-btn');
+      if (button) {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
     }
   };
 
@@ -511,6 +591,12 @@ const Admin = () => {
           onClick={() => setActiveTab('saved')}
         >
           Registrations In Progress ({savedRegistrations.length})
+        </button>
+        <button 
+          className={`tab-button ${activeTab === 'waivers' ? 'active' : ''}`}
+          onClick={() => setActiveTab('waivers')}
+        >
+          Waivers ({waivers.length})
         </button>
       </div>
 
@@ -646,10 +732,16 @@ const Admin = () => {
                       <h4>Participants ({registration.children?.length || 0})</h4>
                       {registration.children?.map((child, idx) => (
                         <div key={idx} className="participant-info">
-                          <p><strong>{child.name}</strong> - Age {child.age}, Grade {child.grade}, {child.gender}</p>
+                          <p><strong>{child.name}</strong> - DOB: {child.dateOfBirth || child.age || 'N/A'}, Grade {child.grade}, {child.gender}</p>
                           {child.dietary && <p><em>Dietary:</em> {child.dietary}</p>}
                           {child.medical && <p><em>Medical:</em> {child.medical}</p>}
-                          <p><em>Emergency Contact:</em> {child.emergencyContact?.name || child.emergencyContact || 'N/A'} ({child.emergencyPhone || child.emergencyContact?.phone || 'N/A'})</p>
+                          <p><em>Emergency Contact:</em> {
+                            typeof child.emergencyContact === 'object' && child.emergencyContact?.name 
+                              ? `${child.emergencyContact.name} (${child.emergencyContact.phone || 'N/A'})` 
+                              : typeof child.emergencyContact === 'string' 
+                                ? `${child.emergencyContact} (${child.emergencyPhone || 'N/A'})` 
+                                : 'N/A'
+                          }</p>
                         </div>
                       ))}
                     </div>
@@ -746,7 +838,7 @@ const Admin = () => {
                   <div className="table-row">
                     <div className="table-cell">Participant ID</div>
                     <div className="table-cell">Name</div>
-                    <div className="table-cell">Age</div>
+                    <div className="table-cell">DOB</div>
                     <div className="table-cell">Grade</div>
                     <div className="table-cell">Gender</div>
                     <div className="table-cell">Guardian</div>
@@ -760,7 +852,7 @@ const Admin = () => {
                     <div key={participant.id} className="table-row">
                       <div className="table-cell">{participant.participantId}</div>
                       <div className="table-cell">{participant.name}</div>
-                      <div className="table-cell">{participant.age}</div>
+                      <div className="table-cell">{participant.dateOfBirth || participant.age || 'N/A'}</div>
                       <div className="table-cell">{participant.grade}</div>
                       <div className="table-cell">{participant.gender}</div>
                       <div className="table-cell">{participant.guardian?.name || 'N/A'}</div>
@@ -849,7 +941,7 @@ const Admin = () => {
                         saved.children.map((child, idx) => (
                           <div key={idx} className="participant-info">
                             <p><strong>{child.name || 'Unnamed'}</strong></p>
-                            {child.age && <p>Age: {child.age}</p>}
+                            {(child.dateOfBirth || child.age) && <p>DOB: {child.dateOfBirth || child.age}</p>}
                             {child.grade && <p>Grade: {child.grade}</p>}
                             {child.gender && <p>Gender: {child.gender}</p>}
                             {child.dietary && <p><em>Dietary:</em> {child.dietary}</p>}
@@ -897,6 +989,77 @@ const Admin = () => {
                   </div>
                 </div>
               ))
+            )}
+          </div>
+        )}
+
+        {activeTab === 'waivers' && (
+          <div className="waivers-section">
+            {/* Download All Button */}
+            {filteredWaivers.length > 0 && (
+              <div className="waivers-header">
+                <button 
+                  onClick={downloadAllWaivers}
+                  className="download-all-btn"
+                >
+                  <FaDownload /> Download All Waivers (ZIP)
+                </button>
+              </div>
+            )}
+
+            {/* Simple Waivers Table */}
+            {filteredWaivers.length === 0 ? (
+              <div className="no-data">
+                {searchTerm ? 'No waivers match your search criteria.' : 
+                  <div>
+                    <p>No waivers found.</p>
+                    <p style={{color: '#6b7280', fontSize: '14px', marginTop: '8px'}}>
+                      Waivers are automatically generated when users complete registration with the new form (including agreements and signature).
+                    </p>
+                  </div>
+                }
+              </div>
+            ) : (
+              <div className="waivers-table">
+                <div className="table-header">
+                  <div className="table-cell">Document Name</div>
+                  <div className="table-cell">Date/Time</div>
+                  <div className="table-cell">Action</div>
+                </div>
+                <div className="table-body">
+                  {filteredWaivers.map((waiver) => (
+                    <div key={waiver.id} className="table-row">
+                      <div className="table-cell">
+                        <div className="document-name">
+                          <strong>{waiver.parentName || 'Unknown'} - Waiver</strong>
+                          <p className="document-details">
+                            ID: {waiver.registrationId} | {waiver.participantCount} participant{waiver.participantCount !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="table-cell">
+                        <div className="date-info">
+                          {formatDate(waiver.waiverPdf?.generatedAt)}
+                        </div>
+                      </div>
+                      <div className="table-cell">
+                        {waiver.waiverPdf?.publicUrl ? (
+                          <a 
+                            href={waiver.waiverPdf.publicUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="view-waiver-btn"
+                          >
+                            <FaDownload /> View
+                          </a>
+                        ) : (
+                          <span className="no-document">No PDF</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         )}
