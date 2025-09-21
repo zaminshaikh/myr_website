@@ -314,7 +314,7 @@ const sendConfirmationEmailHelper = async (emailData: {
               Muslim Youth Retreat 2025
             </h3>
             <p style="margin: 0; color: #9ca3af; font-size: 14px;">
-              Hosted by Wise Academy
+              Hosted by WISE Academy
             </p>
           </div>
           <div style="border-top: 1px solid #374151; padding-top: 16px;">

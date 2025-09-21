@@ -117,7 +117,7 @@ const HomePage = () => {
           <h2>AN EPIC WEEKEND AWAITS</h2>
           <div className="leadership-content">
             <p>
-              Wise Academy proudly presents the 4th Bi-Annual Youth Retreat for Muslim boys and girls in grades 6–12. Join us for a weekend of growth, fun, and inspiration! Through engaging activities, the retreat helps young Muslims strengthen their identity, grow in confidence, and build lifelong friendships, all in a positive and faith-filled environment.
+              WISE Academy proudly presents the 4th Bi-Annual Youth Retreat for Muslim boys and girls in grades 6–12. Join us for a weekend of growth, fun, and inspiration! Through engaging activities, the retreat helps young Muslims strengthen their identity, grow in confidence, and build lifelong friendships, all in a positive and faith-filled environment.
             </p>
           </div>
         </div>
@@ -373,7 +373,7 @@ const HomePage = () => {
           <h2>Hosted By</h2>
           <div className="partner-logo">
 ~            <a href="https://wiseorlando.org" target="_blank" rel="noopener noreferrer">
-            <img src={wiseAcademyLogo} alt="Wise Academy Logo" />
+            <img src={wiseAcademyLogo} alt="WISE Academy Logo" />
           </a>
           </div>
         </div>

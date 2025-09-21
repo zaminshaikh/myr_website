@@ -94,7 +94,7 @@ const HomePage = () => {
           <h2>LEADERSHIP IN ACTION</h2>
           <div className="leadership-content">
             <p>
-              MYR in partnership with Wise Academy is pleased to present the 3rd bi-annual 
+              MYR in partnership with WISE Academy is pleased to present the 3rd bi-annual 
               leadership opportunity for Muslim Boys and Girls in grades 6 to 12, to increase 
               their leadership capacity and skills over an epic weekend experience.
             </p>
@@ -350,7 +350,7 @@ const HomePage = () => {
         <div className="container">
           <h2>In Partnership With</h2>
           <div className="partner-logo">
-            <img src="/api/placeholder/300/150" alt="Wise Academy Logo" />
+            <img src="/api/placeholder/300/150" alt="WISE Academy Logo" />
           </div>
         </div>
       </section>

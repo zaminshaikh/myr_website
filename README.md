@@ -72,7 +72,7 @@ All images currently use placeholder URLs (`/api/placeholder/...`). Replace thes
 - Logo in navigation
 - Hero background image
 - Facilitator photos
-- Wise Academy logo
+- WISE Academy logo
 
 ### Enable Stripe Integration
 To enable real payment processing:
