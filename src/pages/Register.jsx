@@ -917,13 +917,6 @@ export default function Register() {
           <div className="form-step">
             <div className="step-header">
               <h2>Participant Information</h2>
-              <button 
-                type="button" 
-                onClick={addChild} 
-                className="add-child-btn-top-right"
-              >
-                + Add Another Participant
-              </button>
             </div>
             {children.map((child, idx) => (
               <div key={idx} className="child-form">
@@ -1008,6 +1001,15 @@ export default function Register() {
                 </div>
               </div>
             ))}
+            <div className="add-participant-section">
+              <button 
+                type="button" 
+                onClick={addChild} 
+                className="add-child-btn"
+              >
+                + Add Another Participant
+              </button>
+            </div>
             <div className="form-actions">
               <button type="button" onClick={handleBack} className="back-btn">Back</button>
               <button 
