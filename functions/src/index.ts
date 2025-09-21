@@ -1157,7 +1157,7 @@ export const sendContactEmail = onCall(
       });
 
       const result = await resend.emails.send({
-        from: 'MYR Contact Form <inquiry@resend.dev>',
+        from: 'MYR Contact Form <inquiry@muslimyouthretreat.org>',
         to: ['info@muslimyouthretreat.org'],
         replyTo: email,
         subject: `Contact Form: ${subject}`,
