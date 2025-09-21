@@ -20,7 +20,9 @@ const Admin = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentTypeFilter, setPaymentTypeFilter] = useState('all');
   const [guardianActiveFilter, setGuardianActiveFilter] = useState('all');
+  const [guardianPaymentTypeFilter, setGuardianPaymentTypeFilter] = useState('all');
   const [participantActiveFilter, setParticipantActiveFilter] = useState('all');
+  const [participantPaymentTypeFilter, setParticipantPaymentTypeFilter] = useState('all');
   const [selectedRegistrations, setSelectedRegistrations] = useState([]);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [registrationMessage, setRegistrationMessage] = useState('Registration is currently unavailable. Please check back later.');
@@ -147,6 +149,16 @@ const Admin = () => {
     }
   };
 
+  // Helper function to determine if guardian/participant is from test payment
+  const isTestPayment = (guardianId, participantId) => {
+    // Find registration by guardianId or participantId
+    const registration = registrations.find(reg => 
+      reg.guardianId === guardianId || 
+      (participantId && reg.participantIds?.includes(participantId))
+    );
+    return registration?.testMode === true;
+  };
+
   // Filter functions for each data type
   const filteredRegistrations = registrations.filter(registration => {
     const matchesSearch = 
@@ -175,7 +187,12 @@ const Admin = () => {
            (guardianActiveFilter === 'active' && guardian.active !== false) ||
            (guardianActiveFilter === 'inactive' && guardian.active === false);
     
-    return matchesSearch && matchesActiveFilter;
+    const isTest = isTestPayment(guardian.guardianId);
+    const matchesPaymentType = guardianPaymentTypeFilter === 'all' ||
+           (guardianPaymentTypeFilter === 'test' && isTest) ||
+           (guardianPaymentTypeFilter === 'live' && !isTest);
+    
+    return matchesSearch && matchesActiveFilter && matchesPaymentType;
   });
 
   const filteredParticipants = participants.filter(participant => {
@@ -188,7 +205,12 @@ const Admin = () => {
            (participantActiveFilter === 'active' && participant.active !== false) ||
            (participantActiveFilter === 'inactive' && participant.active === false);
     
-    return matchesSearch && matchesActiveFilter;
+    const isTest = isTestPayment(participant.guardianId, participant.participantId);
+    const matchesPaymentType = participantPaymentTypeFilter === 'all' ||
+           (participantPaymentTypeFilter === 'test' && isTest) ||
+           (participantPaymentTypeFilter === 'live' && !isTest);
+    
+    return matchesSearch && matchesActiveFilter && matchesPaymentType;
   });
 
   const filteredSavedRegistrations = savedRegistrations.filter(saved => {
@@ -283,9 +305,9 @@ const Admin = () => {
   };
 
   const exportGuardiansCSV = () => {
-    const headers = ['guardianId', 'name', 'email', 'phone', 'street', 'apartment', 'city', 'state', 'zipCode', 'country', 'participantCount', 'createdAt'];
+    const headers = ['guardianId', 'name', 'email', 'phone', 'street', 'apartment', 'city', 'state', 'zipCode', 'country', 'participantCount', 'testPayment', 'createdAt'];
     
-    const csvData = guardians.map(guardian => ({
+    const csvData = filteredGuardians.map(guardian => ({
       guardianId: guardian.guardianId || '',
       name: guardian.name || '',
       email: guardian.email || '',
@@ -297,6 +319,7 @@ const Admin = () => {
       zipCode: guardian.address?.zipCode || '',
       country: guardian.address?.country || '',
       participantCount: guardian.participantCount || 0,
+      testPayment: isTestPayment(guardian.guardianId) ? 'Yes' : 'No',
       createdAt: formatDate(guardian.createdAt)
     }));
     
@@ -306,9 +329,9 @@ const Admin = () => {
   };
 
   const exportParticipantsCSV = () => {
-    const headers = ['participantId', 'name', 'dob', 'grade', 'gender', 'guardianName', 'guardianEmail', 'guardianPhone', 'emergencyContactName', 'emergencyContactPhone', 'dietary', 'medical', 'createdAt'];
+    const headers = ['participantId', 'name', 'dob', 'grade', 'gender', 'guardianName', 'guardianEmail', 'guardianPhone', 'emergencyContactName', 'emergencyContactPhone', 'dietary', 'medical', 'testPayment', 'createdAt'];
     
-    const csvData = participants.map(participant => ({
+    const csvData = filteredParticipants.map(participant => ({
       participantId: participant.participantId || '',
       name: participant.name || '',
       dob: participant.dateOfBirth || participant.age || '',
@@ -321,6 +344,7 @@ const Admin = () => {
       emergencyContactPhone: participant.emergencyContact?.phone || '',
       dietary: participant.dietary || '',
       medical: participant.medical || '',
+      testPayment: isTestPayment(participant.guardianId, participant.participantId) ? 'Yes' : 'No',
       createdAt: formatDate(participant.createdAt)
     }));
     
@@ -770,12 +794,22 @@ const Admin = () => {
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
+              <select
+                value={guardianPaymentTypeFilter}
+                onChange={(e) => setGuardianPaymentTypeFilter(e.target.value)}
+                className="payment-type-filter"
+              >
+                <option value="all">All Payments</option>
+                <option value="live">Live Payments</option>
+                <option value="test">Test Payments</option>
+              </select>
               <button
                 onClick={exportGuardiansCSV}
                 className="export-csv-btn"
-                disabled={guardians.length === 0}
+                disabled={filteredGuardians.length === 0}
+                title={`Export ${filteredGuardians.length} filtered guardians to CSV`}
               >
-                <FaDownload /> Export CSV
+                <FaDownload /> Export CSV ({filteredGuardians.length})
               </button>
             </>
           )}
@@ -790,12 +824,22 @@ const Admin = () => {
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
+              <select
+                value={participantPaymentTypeFilter}
+                onChange={(e) => setParticipantPaymentTypeFilter(e.target.value)}
+                className="payment-type-filter"
+              >
+                <option value="all">All Payments</option>
+                <option value="live">Live Payments</option>
+                <option value="test">Test Payments</option>
+              </select>
               <button
                 onClick={exportParticipantsCSV}
                 className="export-csv-btn"
-                disabled={participants.length === 0}
+                disabled={filteredParticipants.length === 0}
+                title={`Export ${filteredParticipants.length} filtered participants to CSV`}
               >
-                <FaDownload /> Export CSV
+                <FaDownload /> Export CSV ({filteredParticipants.length})
               </button>
             </>
           )}
@@ -965,7 +1009,9 @@ const Admin = () => {
           <div className="guardians-list">
             {filteredGuardians.length === 0 ? (
               <div className="no-data">
-                {searchTerm ? 'No guardians match your search criteria.' : 'No guardians found.'}
+                {searchTerm || guardianActiveFilter !== 'all' || guardianPaymentTypeFilter !== 'all'
+                  ? 'No guardians match your search criteria.' 
+                  : 'No guardians found.'}
               </div>
             ) : (
               <div className="data-table">
@@ -978,6 +1024,7 @@ const Admin = () => {
                     <div className="table-cell">Location</div>
                     <div className="table-cell">Participants</div>
                     <div className="table-cell">Status</div>
+                    <div className="table-cell">Payment</div>
                     <div className="table-cell">Created</div>
                   </div>
                 </div>
@@ -1008,6 +1055,13 @@ const Admin = () => {
                           {guardian.active === false ? 'INACTIVE' : 'ACTIVE'}
                         </span>
                       </div>
+                      <div className="table-cell">
+                        {isTestPayment(guardian.guardianId) && (
+                          <span className="test-payment-badge" title="Test Payment - No real money was charged">
+                            🧪 TEST
+                          </span>
+                        )}
+                      </div>
                       <div className="table-cell">{formatDate(guardian.createdAt)}</div>
                     </div>
                   ))}
@@ -1021,7 +1075,9 @@ const Admin = () => {
           <div className="participants-list">
             {filteredParticipants.length === 0 ? (
               <div className="no-data">
-                {searchTerm ? 'No participants match your search criteria.' : 'No participants found.'}
+                {searchTerm || participantActiveFilter !== 'all' || participantPaymentTypeFilter !== 'all'
+                  ? 'No participants match your search criteria.' 
+                  : 'No participants found.'}
               </div>
             ) : (
               <div className="data-table">
@@ -1035,6 +1091,7 @@ const Admin = () => {
                     <div className="table-cell">Guardian</div>
                     <div className="table-cell">Emergency Contact</div>
                     <div className="table-cell">Status</div>
+                    <div className="table-cell">Payment</div>
                     <div className="table-cell">Created</div>
                   </div>
                 </div>
@@ -1060,6 +1117,13 @@ const Admin = () => {
                         >
                           {participant.active === false ? 'INACTIVE' : 'ACTIVE'}
                         </span>
+                      </div>
+                      <div className="table-cell">
+                        {isTestPayment(participant.guardianId, participant.participantId) && (
+                          <span className="test-payment-badge" title="Test Payment - No real money was charged">
+                            🧪 TEST
+                          </span>
+                        )}
                       </div>
                       <div className="table-cell">{formatDate(participant.createdAt)}</div>
                     </div>
