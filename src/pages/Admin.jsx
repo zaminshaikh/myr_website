@@ -335,7 +335,7 @@ const Admin = () => {
 
   const getTotalRevenue = () => {
     return registrations
-      .filter(reg => reg.status === 'paid')
+      .filter(reg => reg.status === 'paid' && !reg.testMode)
       .reduce((total, reg) => total + (reg.total || 0), 0);
   };
 
@@ -800,68 +800,97 @@ const Admin = () => {
               </div>
             ) : (
               <>
-                <div className="bulk-select-header">
-                  <label className="bulk-select-all">
+                <div className="bulk-actions-bar">
+                  <label className="select-all-checkbox">
                     <input
                       type="checkbox"
                       checked={selectedRegistrations.length === filteredRegistrations.length && filteredRegistrations.length > 0}
                       onChange={handleSelectAllRegistrations}
                     />
-                    Select All ({filteredRegistrations.length})
+                    <span>Select All ({filteredRegistrations.length})</span>
                   </label>
                 </div>
                 {filteredRegistrations.map((registration) => (
-                  <div key={registration.id} className="registration-card">
-                    <div className="registration-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={selectedRegistrations.includes(registration.registrationId)}
-                        onChange={() => handleSelectRegistration(registration.registrationId)}
-                      />
-                    </div>
-                  <div className="registration-header">
-                    <div className="registration-info">
-                      <h3>{registration.parent?.name || 'N/A'}</h3>
-                      <p className="registration-id">ID: {registration.registrationId}</p>
-                      <p className="registration-date">
-                        Registered: {formatDate(registration.createdAt)}
-                      </p>
-                    </div>
-                    <div className="registration-status">
-                      <span 
-                        className="status-badge" 
-                        style={{ backgroundColor: getStatusColor(registration.status) }}
-                      >
-                        {registration.status?.toUpperCase()}
-                      </span>
-                      {registration.testMode && (
-                        <span className="test-payment-badge" title="Test Payment - No real money was charged">
-                          🧪 TEST
-                        </span>
-                      )}
-                      <div className="registration-total">
-                        ${registration.total}
+                  <div key={registration.id} className="registration-card-modern">
+                    <div className="card-header">
+                      <div className="card-select">
+                        <input
+                          type="checkbox"
+                          checked={selectedRegistrations.includes(registration.registrationId)}
+                          onChange={() => handleSelectRegistration(registration.registrationId)}
+                        />
                       </div>
-                      <div className="registration-actions">
-                        {(registration.status === 'paid' || registration.status === 'PAID') && registration.paymentIntentId && (
-                          <button
-                            onClick={() => handleRefund(registration)}
-                            className="refund-btn"
-                            title={`Process full refund for $${registration.total}`}
+                      
+                      <div className="card-main-info">
+                        <h3 className="parent-name">{registration.parent?.name || 'N/A'}</h3>
+                        <p className="registration-id">{registration.registrationId}</p>
+                      </div>
+                      
+                      <div className="card-status-section">
+                        <div className="status-badges">
+                          <span 
+                            className="status-badge" 
+                            style={{ backgroundColor: getStatusColor(registration.status) }}
                           >
-                            Refund
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(registration)}
-                          className="delete-btn"
-                          title="Permanently delete registration"
-                        >
-                          Delete
-                        </button>
+                            {registration.status?.toUpperCase()}
+                          </span>
+                          {registration.testMode && (
+                            <span className="test-payment-badge" title="Test Payment - No real money was charged">
+                              🧪 TEST
+                            </span>
+                          )}
+                        </div>
+                        <div className="total-amount">${registration.total}</div>
                       </div>
                     </div>
-                  </div>
+                    
+                    <div className="card-body">
+                      <div className="info-grid">
+                        <div className="info-item">
+                          <span className="label">Contact</span>
+                          <div className="value">
+                            <div>{registration.parent?.email || 'N/A'}</div>
+                            <div className="phone">{registration.parent?.phone || 'N/A'}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="info-item">
+                          <span className="label">Participants</span>
+                          <div className="value">
+                            {registration.children?.length || 0} participant{(registration.children?.length || 0) !== 1 ? 's' : ''}
+                          </div>
+                        </div>
+                        
+                        <div className="info-item">
+                          <span className="label">Registered</span>
+                          <div className="value">{formatDate(registration.createdAt)}</div>
+                        </div>
+                        
+                        <div className="info-item">
+                          <span className="label">Actions</span>
+                          <div className="value">
+                            <div className="action-buttons">
+                              {(registration.status === 'paid' || registration.status === 'PAID') && registration.paymentIntentId && (
+                                <button
+                                  onClick={() => handleRefund(registration)}
+                                  className="btn-refund"
+                                  title={`Process full refund for $${registration.total}`}
+                                >
+                                  Refund
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDelete(registration)}
+                                className="btn-delete"
+                                title="Permanently delete registration"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   
                   <div className="registration-details">
                     <div className="detail-section">
