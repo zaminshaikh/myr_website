@@ -1115,3 +1115,69 @@
     padding: 24px 20px;
   }
 }
+
+/* Registration Disabled Styles */
+.registration-disabled {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.disabled-message {
+  background: white;
+  border-radius: 16px;
+  padding: 48px 40px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f1f5f9;
+}
+
+.disabled-message h2 {
+  color: #dc2626;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.disabled-message p {
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.back-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #EEB541;
+  color: white;
+  text-decoration: none;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.back-home-btn:hover {
+  background: #D4A43A;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(238, 181, 65, 0.3);
+  text-decoration: none;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .disabled-message {
+    padding: 32px 24px;
+  }
+  
+  .disabled-message h2 {
+    font-size: 24px;
+  }
+  
+  .disabled-message p {
+    font-size: 15px;
+  }
+}

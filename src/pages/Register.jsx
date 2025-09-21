@@ -242,6 +242,8 @@ export default function Register() {
       medical: ''
     },
   ]);
+  const [registrationDisabled, setRegistrationDisabled] = useState(false);
+  const [registrationMessage, setRegistrationMessage] = useState('');
 
   // Emergency contact information (shared across all participants)
   const [emergencyContact, setEmergencyContact] = useState({
@@ -385,8 +387,29 @@ export default function Register() {
     setHasSavedData(false);
   };
 
-  // Check for saved data on component mount
+  // Check registration status
+  const checkRegistrationStatus = async () => {
+    try {
+      const getRegistrationSettings = httpsCallable(functions, 'getRegistrationSettings');
+      const result = await getRegistrationSettings();
+      
+      if (result.data.success) {
+        const isEnabled = result.data.settings?.enabled !== false;
+        const message = result.data.settings?.message || 'Registration is currently unavailable. Please check back later.';
+        
+        setRegistrationDisabled(!isEnabled);
+        setRegistrationMessage(message);
+      }
+    } catch (error) {
+      console.warn('Error checking registration status:', error);
+      // If we can't check status, assume registration is enabled
+    }
+  };
+
+  // Check for saved data and registration status on component mount
   useEffect(() => {
+    checkRegistrationStatus();
+    
     const savedData = loadSavedData();
     if (savedData) {
       setHasSavedData(true);
@@ -669,6 +692,24 @@ export default function Register() {
           <p><strong>Registration ID:</strong> {registrationId}</p>
           <p>You will receive a confirmation email shortly with all the details.</p>
           <Link to="/" className="back-home-btn">Back to Home</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (registrationDisabled) {
+    return (
+      <div className="register-container">
+        <div className="register-header">
+          <Link to="/" className="back-link">← Back to Home</Link>
+          <h1>Register for Muslim Youth Retreat 2025</h1>
+        </div>
+        <div className="registration-disabled">
+          <div className="disabled-message">
+            <h2>Registration Currently Unavailable</h2>
+            <p>{registrationMessage}</p>
+            <Link to="/" className="back-home-btn">Back to Home</Link>
+          </div>
         </div>
       </div>
     );

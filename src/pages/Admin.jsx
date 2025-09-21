@@ -20,11 +20,15 @@ const Admin = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [guardianActiveFilter, setGuardianActiveFilter] = useState('all');
   const [participantActiveFilter, setParticipantActiveFilter] = useState('all');
+  const [selectedRegistrations, setSelectedRegistrations] = useState([]);
+  const [registrationEnabled, setRegistrationEnabled] = useState(true);
+  const [registrationMessage, setRegistrationMessage] = useState('Registration is currently unavailable. Please check back later.');
   const { currentUser, signout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchAllData();
+    fetchRegistrationSettings();
   }, []);
 
   const fetchAllData = async () => {
@@ -103,6 +107,42 @@ const Admin = () => {
     } catch (error) {
       console.warn('Error fetching waivers (setting empty array):', error);
       setWaivers([]); // Set empty array to prevent admin panel from breaking
+    }
+  };
+
+  const fetchRegistrationSettings = async () => {
+    try {
+      const getRegistrationSettings = httpsCallable(functions, 'getRegistrationSettings');
+      const result = await getRegistrationSettings();
+      
+      if (result.data.success) {
+        setRegistrationEnabled(result.data.settings?.enabled !== false);
+        setRegistrationMessage(result.data.settings?.message || 'Registration is currently unavailable. Please check back later.');
+      }
+    } catch (error) {
+      console.warn('Error fetching registration settings:', error);
+      // Keep default values
+    }
+  };
+
+  const updateRegistrationSettings = async (enabled, message) => {
+    try {
+      const updateSettings = httpsCallable(functions, 'updateRegistrationSettings');
+      const result = await updateSettings({
+        enabled: enabled,
+        message: message
+      });
+      
+      if (result.data.success) {
+        setRegistrationEnabled(enabled);
+        setRegistrationMessage(message);
+        alert('Registration settings updated successfully!');
+      } else {
+        throw new Error('Failed to update settings');
+      }
+    } catch (error) {
+      console.error('Error updating registration settings:', error);
+      alert(`Failed to update registration settings: ${error.message}`);
     }
   };
 
@@ -434,6 +474,73 @@ const Admin = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedRegistrations.length === 0) {
+      alert('Please select registrations to delete.');
+      return;
+    }
+
+    const selectedRegs = registrations.filter(reg => selectedRegistrations.includes(reg.registrationId));
+    const confirmDelete = window.confirm(
+      `Are you sure you want to PERMANENTLY DELETE ${selectedRegistrations.length} registration(s)?\n\n` +
+      `Selected registrations:\n${selectedRegs.map(reg => `• ${reg.parent?.name || 'N/A'} (${reg.registrationId})`).join('\n')}\n\n` +
+      `This action will:\n` +
+      `• Delete all selected registrations completely\n` +
+      `• Remove all participant records\n` +
+      `• Remove guardian records (if no other registrations)\n\n` +
+      `THIS CANNOT BE UNDONE!`
+    );
+
+    if (!confirmDelete) return;
+
+    // Double confirmation for bulk delete
+    const doubleConfirm = window.confirm(
+      `FINAL CONFIRMATION\n\n` +
+      `Type "DELETE ALL" in your mind and click OK to proceed with permanent deletion of ${selectedRegistrations.length} registrations`
+    );
+
+    if (!doubleConfirm) return;
+
+    try {
+      setLoading(true);
+      const bulkDeleteRegistrations = httpsCallable(functions, 'bulkDeleteRegistrations');
+      const result = await bulkDeleteRegistrations({
+        registrationIds: selectedRegistrations
+      });
+
+      if (result.data.success) {
+        alert(`${result.data.deletedCount} registration(s) deleted successfully!`);
+        setSelectedRegistrations([]); // Clear selection
+        await fetchAllData(); // Refresh data
+      } else {
+        throw new Error('Bulk delete failed');
+      }
+    } catch (error) {
+      console.error('Error bulk deleting registrations:', error);
+      alert(`Failed to delete registrations: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectRegistration = (registrationId) => {
+    setSelectedRegistrations(prev => {
+      if (prev.includes(registrationId)) {
+        return prev.filter(id => id !== registrationId);
+      } else {
+        return [...prev, registrationId];
+      }
+    });
+  };
+
+  const handleSelectAllRegistrations = () => {
+    if (selectedRegistrations.length === filteredRegistrations.length) {
+      setSelectedRegistrations([]);
+    } else {
+      setSelectedRegistrations(filteredRegistrations.map(reg => reg.registrationId));
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-container">
@@ -598,6 +705,12 @@ const Admin = () => {
         >
           Waivers ({waivers.length})
         </button>
+        <button 
+          className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          Registration Settings
+        </button>
       </div>
 
       <div className="admin-controls">
@@ -610,16 +723,27 @@ const Admin = () => {
             className="search-input"
           />
           {activeTab === 'registrations' && (
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="status-filter"
-            >
-              <option value="all">All Status</option>
-              <option value="paid">Paid</option>
-              <option value="pending">Pending</option>
-              <option value="refunded">Refunded</option>
-            </select>
+            <>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="status-filter"
+              >
+                <option value="all">All Status</option>
+                <option value="paid">Paid</option>
+                <option value="pending">Pending</option>
+                <option value="refunded">Refunded</option>
+              </select>
+              {selectedRegistrations.length > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  className="bulk-delete-btn"
+                  title={`Delete ${selectedRegistrations.length} selected registration(s)`}
+                >
+                  Delete Selected ({selectedRegistrations.length})
+                </button>
+              )}
+            </>
           )}
           {activeTab === 'guardians' && (
             <>
@@ -675,8 +799,26 @@ const Admin = () => {
                   : 'No registrations found.'}
               </div>
             ) : (
-              filteredRegistrations.map((registration) => (
-                <div key={registration.id} className="registration-card">
+              <>
+                <div className="bulk-select-header">
+                  <label className="bulk-select-all">
+                    <input
+                      type="checkbox"
+                      checked={selectedRegistrations.length === filteredRegistrations.length && filteredRegistrations.length > 0}
+                      onChange={handleSelectAllRegistrations}
+                    />
+                    Select All ({filteredRegistrations.length})
+                  </label>
+                </div>
+                {filteredRegistrations.map((registration) => (
+                  <div key={registration.id} className="registration-card">
+                    <div className="registration-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedRegistrations.includes(registration.registrationId)}
+                        onChange={() => handleSelectRegistration(registration.registrationId)}
+                      />
+                    </div>
                   <div className="registration-header">
                     <div className="registration-info">
                       <h3>{registration.parent?.name || 'N/A'}</h3>
@@ -765,7 +907,8 @@ const Admin = () => {
                     )}
                   </div>
                 </div>
-              ))
+              ))}
+            </>
             )}
           </div>
         )}
@@ -904,7 +1047,7 @@ const Admin = () => {
                         {saved.paymentError ? 'PAYMENT FAILED' : 'INCOMPLETE'}
                       </span>
                       <div className="step-info">
-                        Step {saved.step || 1} of 4
+                        Step {saved.step || 1} of 5
                       </div>
                       {saved.total && (
                         <div className="saved-registration-total">
@@ -955,12 +1098,13 @@ const Admin = () => {
 
                     <div className="detail-section">
                       <h4>Progress Status</h4>
-                      <p><strong>Current Step:</strong> {saved.step || 1} of 4</p>
+                      <p><strong>Current Step:</strong> {saved.step || 1} of 5</p>
                       <div className="step-indicator">
                         <div className={`step ${saved.step >= 1 ? 'completed' : ''}`}>1. Parent Info</div>
                         <div className={`step ${saved.step >= 2 ? 'completed' : ''}`}>2. Participants</div>
-                        <div className={`step ${saved.step >= 3 ? 'completed' : ''}`}>3. Agreements</div>
-                        <div className={`step ${saved.step >= 4 ? 'completed' : ''}`}>4. Payment</div>
+                        <div className={`step ${saved.step >= 3 ? 'completed' : ''}`}>3. Emergency Contact</div>
+                        <div className={`step ${saved.step >= 4 ? 'completed' : ''}`}>4. Agreements</div>
+                        <div className={`step ${saved.step >= 5 ? 'completed' : ''}`}>5. Payment</div>
                       </div>
                       
                       {saved.paymentError && (
@@ -1061,6 +1205,79 @@ const Admin = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="settings-section">
+            <div className="settings-card">
+              <h3>Registration Control</h3>
+              <div className="setting-group">
+                <div className="setting-header">
+                  <label className="setting-toggle">
+                    <input
+                      type="checkbox"
+                      checked={registrationEnabled}
+                      onChange={(e) => setRegistrationEnabled(e.target.checked)}
+                    />
+                    <span className="toggle-slider"></span>
+                    Registration Enabled
+                  </label>
+                  <span className={`status-indicator ${registrationEnabled ? 'enabled' : 'disabled'}`}>
+                    {registrationEnabled ? 'ENABLED' : 'DISABLED'}
+                  </span>
+                </div>
+                
+                <div className="setting-description">
+                  <p>When disabled, users will see a message instead of the registration form.</p>
+                </div>
+
+                <div className="setting-field">
+                  <label htmlFor="registration-message">Message to display when registration is disabled:</label>
+                  <textarea
+                    id="registration-message"
+                    value={registrationMessage}
+                    onChange={(e) => setRegistrationMessage(e.target.value)}
+                    placeholder="Enter the message users will see when registration is disabled..."
+                    rows="3"
+                    className="message-textarea"
+                  />
+                </div>
+
+                <div className="setting-actions">
+                  <button
+                    onClick={() => updateRegistrationSettings(registrationEnabled, registrationMessage)}
+                    className="save-settings-btn"
+                  >
+                    Save Settings
+                  </button>
+                  <button
+                    onClick={() => {
+                      setRegistrationEnabled(true);
+                      setRegistrationMessage('Registration is currently unavailable. Please check back later.');
+                    }}
+                    className="reset-settings-btn"
+                  >
+                    Reset to Default
+                  </button>
+                </div>
+              </div>
+
+              <div className="settings-preview">
+                <h4>Preview</h4>
+                <div className={`preview-box ${registrationEnabled ? 'enabled-preview' : 'disabled-preview'}`}>
+                  {registrationEnabled ? (
+                    <div className="enabled-message">
+                      ✅ Registration form will be displayed to users
+                    </div>
+                  ) : (
+                    <div className="disabled-message">
+                      ⚠️ Users will see: "{registrationMessage}"
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -962,3 +962,272 @@
     justify-content: center;
   }
 }
+
+/* Bulk Delete Styles */
+.bulk-select-header {
+  background: #f8f9fa;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #e1e5e9;
+}
+
+.bulk-select-all {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  color: #495057;
+  cursor: pointer;
+}
+
+.bulk-select-all input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.registration-card {
+  position: relative;
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+.registration-checkbox {
+  margin-top: 20px;
+}
+
+.registration-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.bulk-delete-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.bulk-delete-btn:hover {
+  background: #c82333;
+}
+
+/* Settings Section Styles */
+.settings-section {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.settings-card {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.settings-card h3 {
+  margin: 0 0 25px 0;
+  color: #2c3e50;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.setting-group {
+  margin-bottom: 30px;
+}
+
+.setting-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.setting-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.setting-toggle input[type="checkbox"] {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 50px;
+  height: 26px;
+  background: #ccc;
+  border-radius: 26px;
+  transition: background 0.3s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.setting-toggle input[type="checkbox"]:checked + .toggle-slider {
+  background: #28a745;
+}
+
+.setting-toggle input[type="checkbox"]:checked + .toggle-slider::before {
+  transform: translateX(24px);
+}
+
+.status-indicator {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-indicator.enabled {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-indicator.disabled {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.setting-description {
+  margin-bottom: 20px;
+}
+
+.setting-description p {
+  color: #6c757d;
+  margin: 0;
+  font-size: 14px;
+}
+
+.setting-field {
+  margin-bottom: 25px;
+}
+
+.setting-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.message-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.message-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.setting-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.save-settings-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.save-settings-btn:hover {
+  background: #0056b3;
+}
+
+.reset-settings-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.reset-settings-btn:hover {
+  background: #545b62;
+}
+
+.settings-preview {
+  border-top: 1px solid #e1e5e9;
+  padding-top: 25px;
+}
+
+.settings-preview h4 {
+  margin: 0 0 15px 0;
+  color: #495057;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.preview-box {
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid;
+}
+
+.enabled-preview {
+  background: #d4edda;
+  border-color: #c3e6cb;
+}
+
+.disabled-preview {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+.enabled-message, .disabled-message {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.enabled-message {
+  color: #155724;
+}
+
+.disabled-message {
+  color: #721c24;
+}

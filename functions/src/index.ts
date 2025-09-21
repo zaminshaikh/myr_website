@@ -1750,3 +1750,179 @@ export const downloadAllWaivers = onCall({
     throw new Error(`Failed to create waivers ZIP: ${error.message}`);
   }
 });
+
+// Get registration settings (for admin portal and registration page)
+export const getRegistrationSettings = onCall(async (request) => {
+  try {
+    const db = admin.firestore();
+    
+    // Get the settings document
+    const settingsRef = db.collection("settings").doc("registration");
+    const settingsDoc = await settingsRef.get();
+    
+    if (!settingsDoc.exists) {
+      // Return default settings if none exist
+      return {
+        success: true,
+        settings: {
+          enabled: true,
+          message: "Registration is currently unavailable. Please check back later."
+        }
+      };
+    }
+    
+    return {
+      success: true,
+      settings: settingsDoc.data()
+    };
+  } catch (error: any) {
+    logger.error("Error getting registration settings:", error);
+    throw new Error(`Failed to get registration settings: ${error.message}`);
+  }
+});
+
+// Update registration settings (for admin portal)
+export const updateRegistrationSettings = onCall(async (request) => {
+  try {
+    const { enabled, message } = request.data;
+    
+    if (typeof enabled !== 'boolean') {
+      throw new Error("Enabled must be a boolean value");
+    }
+    
+    if (!message || typeof message !== 'string') {
+      throw new Error("Message must be a non-empty string");
+    }
+    
+    const db = admin.firestore();
+    
+    // Update the settings document
+    const settingsRef = db.collection("settings").doc("registration");
+    await settingsRef.set({
+      enabled: enabled,
+      message: message,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    logger.info(`Registration settings updated: enabled=${enabled}, message="${message}"`);
+    
+    return {
+      success: true,
+      message: "Registration settings updated successfully"
+    };
+  } catch (error: any) {
+    logger.error("Error updating registration settings:", error);
+    throw new Error(`Failed to update registration settings: ${error.message}`);
+  }
+});
+
+// Bulk delete registrations (for admin portal)
+export const bulkDeleteRegistrations = onCall(async (request) => {
+  logger.info("Bulk delete registrations function called", { data: request.data });
+  try {
+    const { registrationIds } = request.data;
+    
+    if (!registrationIds || !Array.isArray(registrationIds) || registrationIds.length === 0) {
+      throw new Error("Registration IDs array is required and must not be empty");
+    }
+    
+    const db = admin.firestore();
+    let deletedCount = 0;
+    
+    // Process deletions in batches to avoid Firestore limits
+    const batchSize = 10; // Firestore batch limit is 500, but we'll be conservative
+    
+    for (let i = 0; i < registrationIds.length; i += batchSize) {
+      const batch = db.batch();
+      const batchIds = registrationIds.slice(i, i + batchSize);
+      
+      for (const registrationId of batchIds) {
+        try {
+          // Find the registration document
+          const registrationQuery = db
+              .collection("registrations")
+              .where("registrationId", "==", registrationId);
+          
+          const registrationSnapshot = await registrationQuery.get();
+          
+          if (registrationSnapshot.empty) {
+            logger.warn(`Registration not found: ${registrationId}`);
+            continue;
+          }
+          
+          const registrationDoc = registrationSnapshot.docs[0];
+          const registrationData = registrationDoc.data();
+          
+          // Delete the registration document
+          batch.delete(registrationDoc.ref);
+          
+          // Delete all participants associated with this registration
+          const participantsQuery = db
+              .collection("participants")
+              .where("registrationId", "==", registrationId);
+          
+          const participantsSnapshot = await participantsQuery.get();
+          participantsSnapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+          });
+          
+          // Check if we should delete the guardian
+          if (registrationData.guardianId) {
+            // Check if this guardian has other participants not in the registrations being deleted
+            const otherParticipantsQuery = db
+                .collection("participants")
+                .where("guardianId", "==", registrationData.guardianId);
+            
+            const otherParticipantsSnapshot = await otherParticipantsQuery.get();
+            
+            // Filter out participants that belong to registrations being deleted
+            const remainingParticipants = otherParticipantsSnapshot.docs.filter(
+              doc => !registrationIds.includes(doc.data().registrationId)
+            );
+            
+            if (remainingParticipants.length === 0) {
+              // No other participants, safe to delete guardian
+              const guardianQuery = db
+                  .collection("guardians")
+                  .where("guardianId", "==", registrationData.guardianId);
+              
+              const guardianSnapshot = await guardianQuery.get();
+              guardianSnapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+              });
+            }
+          }
+          
+          deletedCount++;
+        } catch (error: any) {
+          logger.error(`Error processing registration ${registrationId}:`, error);
+          // Continue with other registrations even if one fails
+        }
+      }
+      
+      // Commit this batch if it has operations
+      try {
+        await batch.commit();
+        logger.info(`Committed batch ${Math.floor(i / batchSize) + 1}, processed ${batchIds.length} registrations`);
+      } catch (batchError: any) {
+        if (batchError.message && batchError.message.includes('batch is empty')) {
+          logger.info(`Batch ${Math.floor(i / batchSize) + 1} was empty, skipping commit`);
+        } else {
+          throw batchError;
+        }
+      }
+    }
+    
+    logger.info(`Bulk delete completed: ${deletedCount} registrations deleted out of ${registrationIds.length} requested`);
+    
+    return {
+      success: true,
+      message: `${deletedCount} registrations deleted successfully`,
+      deletedCount: deletedCount,
+      requestedCount: registrationIds.length
+    };
+  } catch (error: any) {
+    logger.error("Error bulk deleting registrations:", error);
+    throw new Error(`Failed to bulk delete registrations: ${error.message}`);
+  }
+});
