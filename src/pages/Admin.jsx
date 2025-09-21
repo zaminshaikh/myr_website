@@ -834,6 +834,11 @@ const Admin = () => {
                       >
                         {registration.status?.toUpperCase()}
                       </span>
+                      {registration.testMode && (
+                        <span className="test-payment-badge" title="Test Payment - No real money was charged">
+                          🧪 TEST
+                        </span>
+                      )}
                       <div className="registration-total">
                         ${registration.total}
                       </div>

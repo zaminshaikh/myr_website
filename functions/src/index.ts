@@ -417,7 +417,7 @@ export const saveRegistration = onCall(
   },
   async (request) => {
   try {
-    const {registrationData, paymentIntentId} = request.data;
+    const {registrationData, paymentIntentId, testMode} = request.data;
 
     if (!registrationData) {
       throw new Error("Registration data is required");
@@ -571,6 +571,7 @@ export const saveRegistration = onCall(
       total: registrationData.total,
       status: paymentIntentId ? "paid" : "pending",
       step: 5, // Updated for new step count
+      testMode: testMode === true, // Store test mode status
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };

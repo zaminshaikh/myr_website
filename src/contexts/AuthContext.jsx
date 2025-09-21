@@ -38,6 +38,15 @@ export const AuthProvider = ({ children }) => {
   const signout = async () => {
     try {
       setError(null);
+      
+      // Reset test mode to live when admin logs out
+      localStorage.setItem('stripe-test-mode', 'false');
+      
+      // Dispatch event to notify other components about the mode change
+      window.dispatchEvent(new CustomEvent('stripe-mode-changed', { 
+        detail: { testMode: false } 
+      }));
+      
       await signOut(auth);
     } catch (error) {
       setError(error.message);

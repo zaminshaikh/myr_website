@@ -142,7 +142,8 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
             ...registrationData,
             total: total
           },
-          paymentIntentId: paymentIntent.id
+          paymentIntentId: paymentIntent.id,
+          testMode: testMode
         });
 
         if (!registrationResult.data.success) {
