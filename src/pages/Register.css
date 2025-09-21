@@ -374,6 +374,7 @@
   border-radius: 20px;
   margin-bottom: 40px;
   border: 2px solid #e5e7eb;
+  overflow: hidden; /* Prevents content from overflowing */
 }
 
 .payment-summary h3 {
@@ -386,11 +387,14 @@
 .participant-summary {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
   color: #6b7280;
   font-weight: 500;
   padding: 12px 0;
   border-bottom: 1px solid #f3f4f6;
+  min-height: 24px;
+  gap: 12px;
 }
 
 .total-summary {
@@ -719,6 +723,22 @@
   .success-message h2 {
     font-size: 2rem;
   }
+  
+  /* Mobile fixes for payment elements */
+  .participant-summary {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .participant-summary span:first-child {
+    flex: 1;
+    min-width: 0; /* Allows text to wrap */
+    word-break: break-word;
+  }
+  
+  .participant-summary span:last-child {
+    flex-shrink: 0;
+  }
 }
 
 @media (max-width: 480px) {
@@ -745,6 +765,45 @@
   
   .register-form {
     padding: 24px 16px;
+  }
+  
+  /* Mobile-specific fixes for Stripe elements */
+  .card-element-container {
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .card-element-container label {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  
+  .StripeElement {
+    padding: 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .pay-button {
+    padding: 16px 20px;
+    font-size: 16px;
+  }
+  
+  .participant-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 8px 0;
+  }
+  
+  .participant-summary span:last-child {
+    font-weight: 600;
+    color: #1f2937;
+    align-self: flex-end;
+  }
+  
+  .payment-security {
+    font-size: 12px;
+    margin-top: 12px;
   }
 }
 

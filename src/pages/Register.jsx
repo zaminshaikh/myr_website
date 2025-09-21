@@ -191,14 +191,23 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
       base: {
         fontSize: '16px',
         color: '#424770',
+        fontFamily: 'Inter, Segoe UI, -apple-system, BlinkMacSystemFont, sans-serif',
+        fontSmoothing: 'antialiased',
+        lineHeight: '24px',
         '::placeholder': {
           color: '#aab7c4',
         },
       },
       invalid: {
         color: '#9e2146',
+        iconColor: '#9e2146',
+      },
+      complete: {
+        color: '#424770',
       },
     },
+    hidePostalCode: false,
+    iconStyle: 'solid',
   };
 
   return (
