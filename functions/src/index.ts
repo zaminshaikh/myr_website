@@ -43,6 +43,7 @@ const sendConfirmationEmailHelper = async (emailData: {
   location?: string;
   total?: number;
   type?: string;
+  registrationData?: any;
 }) => {
   const {
     recipientEmail,
@@ -52,7 +53,8 @@ const sendConfirmationEmailHelper = async (emailData: {
     eventDate = "Friday Dec 05, 2025, 4:00 PM – Sunday Dec 07, 2025, 4:00 PM",
     location = "Florida Elks Youth Camp, 24175 SE Hwy 450, Umatilla, FL 32784, USA",
     total,
-    type = "registration"
+    type = "registration",
+    registrationData
   } = emailData;
 
   // Validate required fields
@@ -189,6 +191,29 @@ const sendConfirmationEmailHelper = async (emailData: {
           </div>
           ` : ''}
 
+          <!-- Parent/Guardian Information -->
+          <div style="margin-bottom: 32px;">
+            <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
+              <span style="background: linear-gradient(135deg, #557CBA 0%, #4A6BA8 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </span>
+              Parent/Guardian Information
+            </h3>
+            <div style="background: rgba(85, 124, 186, 0.1); padding: 20px; border-radius: 12px; margin-bottom: 16px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px; color: #4b5563;">
+                <div><strong>Name:</strong> ${recipientName}</div>
+                <div><strong>Email:</strong> ${recipientEmail}</div>
+                ${registrationData?.parent?.phone ? `<div><strong>Phone:</strong> ${registrationData.parent.phone}</div>` : ''}
+                ${registrationData?.parent?.address ? `<div style="grid-column: 1 / -1;"><strong>Address:</strong> ${registrationData.parent.address}${registrationData.parent.apartment ? `, ${registrationData.parent.apartment}` : ''}</div>` : ''}
+                ${registrationData?.parent?.city && registrationData?.parent?.state ? `<div><strong>City, State:</strong> ${registrationData.parent.city}, ${registrationData.parent.state} ${registrationData.parent.zipCode || ''}</div>` : ''}
+                ${registrationData?.parent?.country ? `<div><strong>Country:</strong> ${registrationData.parent.country}</div>` : ''}
+              </div>
+            </div>
+          </div>
+
           ${participantsList ? `
           <!-- Participants -->
           <div style="margin-bottom: 32px;">
@@ -204,6 +229,49 @@ const sendConfirmationEmailHelper = async (emailData: {
               Registered Participants
             </h3>
             ${participantsList}
+          </div>
+          ` : ''}
+
+          <!-- Emergency Contact Information -->
+          ${registrationData?.emergencyContact ? `
+          <div style="margin-bottom: 32px;">
+            <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
+              <span style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+              </span>
+              Emergency Contact Information
+            </h3>
+            <div style="background: rgba(220, 38, 38, 0.1); padding: 20px; border-radius: 12px; margin-bottom: 16px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px; color: #4b5563;">
+                ${registrationData.emergencyContact.name ? `<div><strong>Name:</strong> ${registrationData.emergencyContact.name}</div>` : ''}
+                ${registrationData.emergencyContact.phone ? `<div><strong>Phone:</strong> ${registrationData.emergencyContact.phone}</div>` : ''}
+                ${registrationData.emergencyContact.relationship ? `<div><strong>Relationship:</strong> ${registrationData.emergencyContact.relationship}</div>` : ''}
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Agreement Status -->
+          ${registrationData?.agreement ? `
+          <div style="margin-bottom: 32px;">
+            <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
+              <span style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 12l2 2 4-4"></path>
+                  <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.4 0 2.73.32 3.91.9"></path>
+                </svg>
+              </span>
+              Agreements & Waivers Status
+            </h3>
+            <div style="background: rgba(5, 150, 105, 0.1); padding: 20px; border-radius: 12px; margin-bottom: 16px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; font-size: 14px; color: #4b5563;">
+                <div><strong>Informed Consent:</strong> <span style="color: ${registrationData.agreement.informedConsent ? '#059669' : '#dc2626'}; font-weight: 600;">${registrationData.agreement.informedConsent ? '✓ Agreed' : '✗ Not Agreed'}</span></div>
+                <div><strong>Medical Release:</strong> <span style="color: ${registrationData.agreement.medicalRelease ? '#059669' : '#dc2626'}; font-weight: 600;">${registrationData.agreement.medicalRelease ? '✓ Agreed' : '✗ Not Agreed'}</span></div>
+                <div style="grid-column: 1 / -1;"><strong>Electronic Signature:</strong> <span style="color: #059669; font-weight: 600;">${registrationData.signature ? '✓ Provided' : '✗ Not Provided'}</span></div>
+              </div>
+            </div>
           </div>
           ` : ''}
 
@@ -224,70 +292,6 @@ const sendConfirmationEmailHelper = async (emailData: {
             </div>
           </div>
 
-          <!-- What to Bring -->
-          <div style="background: #f8fafc; padding: 32px; border-radius: 20px; margin-bottom: 32px; border: 1px solid #e2e8f0;">
-            <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
-              <span style="background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14,2 14,8 20,8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10,9 9,9 8,9"></polyline>
-                </svg>
-              </span>
-              What to Bring
-            </h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px; color: #4b5563;">
-              <div style="display: flex; align-items: center; padding: 8px 0;">
-                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
-                1 Quran
-              </div>
-              <div style="display: flex; align-items: center; padding: 8px 0;">
-                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
-                Sleeping bag/sheets
-              </div>
-              <div style="display: flex; align-items: center; padding: 8px 0;">
-                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
-                Pillow & pillowcase
-              </div>
-              <div style="display: flex; align-items: center; padding: 8px 0;">
-                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
-                Towels & toiletries
-              </div>
-              <div style="display: flex; align-items: center; padding: 8px 0;">
-                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
-                Water bottle
-              </div>
-              <div style="display: flex; align-items: center; padding: 8px 0;">
-                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
-                Appropriate clothing
-              </div>
-            </div>
-            <p style="margin: 16px 0 0 0; font-size: 14px; color: #6b7280; font-style: italic;">
-              For a complete packing list, please refer to our FAQ section on the website.
-            </p>
-          </div>
-
-          <!-- Important Notes -->
-          <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(245, 101, 101, 0.1) 100%); padding: 24px; border-radius: 16px; border: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 32px;">
-            <h4 style="margin: 0 0 12px 0; color: #dc2626; font-size: 16px; font-weight: 600; display: flex; align-items: center;">
-              <span style="margin-right: 8px; color: #dc2626;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                  <line x1="12" y1="9" x2="12" y2="13"></line>
-                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-              </span>
-              Important Reminders
-            </h4>
-            <ul style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.6;">
-              <li style="margin-bottom: 8px;">Registration deadline: <strong>November 17th, 2025</strong></li>
-              <li style="margin-bottom: 8px;">Arrival: Friday Dec 5th at 4:30 PM</li>
-              <li style="margin-bottom: 8px;">Departure: Sunday Dec 7th at 4:30 PM</li>
-              <li>Transportation is not provided - please arrange your own</li>
-            </ul>
-          </div>
 
           <!-- Contact Information -->
           <div style="text-align: center; padding: 32px 0; border-top: 1px solid #e5e7eb;">

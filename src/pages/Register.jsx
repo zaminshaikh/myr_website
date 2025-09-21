@@ -168,7 +168,8 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
             registrationId: registrationId,
             children: registrationData.children,
             total: total,
-            type: 'payment'
+            type: 'payment',
+            registrationData: registrationData
           });
           console.log('Confirmation email sent successfully');
         } catch (emailError) {
