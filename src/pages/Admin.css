@@ -148,7 +148,8 @@
   font-size: 14px;
 }
 
-.status-filter {
+.status-filter,
+.payment-type-filter {
   padding: 12px;
   border: 1px solid #ddd;
   border-radius: 5px;

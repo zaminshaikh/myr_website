@@ -18,6 +18,7 @@ const Admin = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState('all');
   const [guardianActiveFilter, setGuardianActiveFilter] = useState('all');
   const [participantActiveFilter, setParticipantActiveFilter] = useState('all');
   const [selectedRegistrations, setSelectedRegistrations] = useState([]);
@@ -157,7 +158,11 @@ const Admin = () => {
     
     const matchesStatus = statusFilter === 'all' || registration.status === statusFilter;
     
-    return matchesSearch && matchesStatus;
+    const matchesPaymentType = paymentTypeFilter === 'all' || 
+      (paymentTypeFilter === 'test' && registration.testMode === true) ||
+      (paymentTypeFilter === 'live' && registration.testMode !== true);
+    
+    return matchesSearch && matchesStatus && matchesPaymentType;
   });
 
   const filteredGuardians = guardians.filter(guardian => {
@@ -734,6 +739,15 @@ const Admin = () => {
                 <option value="pending">Pending</option>
                 <option value="refunded">Refunded</option>
               </select>
+              <select
+                value={paymentTypeFilter}
+                onChange={(e) => setPaymentTypeFilter(e.target.value)}
+                className="payment-type-filter"
+              >
+                <option value="all">All Payments</option>
+                <option value="live">Live Payments</option>
+                <option value="test">Test Payments</option>
+              </select>
               {selectedRegistrations.length > 0 && (
                 <button
                   onClick={handleBulkDelete}
@@ -794,7 +808,7 @@ const Admin = () => {
           <div className="registrations-list">
             {filteredRegistrations.length === 0 ? (
               <div className="no-data">
-                {searchTerm || statusFilter !== 'all' 
+                {searchTerm || statusFilter !== 'all' || paymentTypeFilter !== 'all'
                   ? 'No registrations match your search criteria.' 
                   : 'No registrations found.'}
               </div>
