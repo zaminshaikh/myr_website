@@ -1358,7 +1358,7 @@ const generateWaiverPDFHelper = async (data: {
   doc.setFontSize(9);
   doc.setFont("times", "normal");
   const consentText = doc.splitTextToSize(
-    'I hereby give my approval for my child\'s participation in any and all activities prepared by wISE Academy during the selected camp. In exchange for the acceptance of said child, I assume all risk and hazards incidental to the conduct of the activities, and release, absolve and hold harmless WISE Academy, the organizers and all their respective officers, agents, and representatives from any and all liability for injuries to said child arising out of traveling to, participating in, or returning from selected camp sessions.',
+    'I hereby give my approval for my child\'s participation in any and all activities prepared by WISE Academy during the selected camp. In exchange for the acceptance of said child, I assume all risk and hazards incidental to the conduct of the activities, and release, absolve and hold harmless WISE Academy, the organizers and all their respective officers, agents, and representatives from any and all liability for injuries to said child arising out of traveling to, participating in, or returning from selected camp sessions.',
     170
   );
   doc.text(consentText, 20, yPos);
