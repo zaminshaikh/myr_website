@@ -282,6 +282,8 @@ export default function Register() {
         parent: progressData.parent || parent,
         children: progressData.children || children,
         agreement: progressData.agreement || agreement,
+        emergencyContact: progressData.emergencyContact || emergencyContact,
+        signature: progressData.signature || signature,
         timestamp: new Date().toISOString()
       };
       
@@ -297,7 +299,9 @@ export default function Register() {
               step: dataToSave.step,
               parent: dataToSave.parent,
               children: dataToSave.children,
-              agreement: dataToSave.agreement
+              agreement: dataToSave.agreement,
+              emergencyContact: dataToSave.emergencyContact,
+              signature: dataToSave.signature
             }
           });
         } catch (backendError) {
@@ -350,6 +354,12 @@ export default function Register() {
       setParent(savedData.parent);
       setChildren(savedData.children);
       setAgreement(savedData.agreement);
+      if (savedData.emergencyContact) {
+        setEmergencyContact(savedData.emergencyContact);
+      }
+      if (savedData.signature) {
+        setSignature(savedData.signature);
+      }
     }
     setShowContinueDialog(false);
     setHasSavedData(false);
@@ -393,12 +403,12 @@ export default function Register() {
       Object.values(agreement).some(val => val)
     )) {
       const timeoutId = setTimeout(() => {
-        saveRegistrationProgress({ step, parent, children, agreement });
+        saveRegistrationProgress({ step, parent, children, agreement, emergencyContact, signature });
       }, 1000); // Debounce for 1 second
 
       return () => clearTimeout(timeoutId);
     }
-  }, [step, parent, children, agreement, hasSavedData, showContinueDialog]);
+  }, [step, parent, children, agreement, emergencyContact, signature, hasSavedData, showContinueDialog]);
 
   const handleChildChange = (idx, field, value) => {
     setChildren((prev) => {
@@ -455,8 +465,8 @@ export default function Register() {
     }
   };
 
-  // First participant $275, additional participants $250 each
-  const total = children.length > 0 ? 275 + (children.length - 1) * 250 : 0;
+  // Pricing: Single child $275, multiple children get $25 discount on first child
+  const total = children.length === 1 ? 275 : 250 + (children.length - 1) * 275;
 
   const handleNext = () => {
     setStep(step + 1);
@@ -1158,14 +1168,13 @@ export default function Register() {
               <h3>Registration Summary</h3>
               <div className="pricing-details">
                 <p>Number of participants: {children.length}</p>
-                {children.length > 1 ? (
-                  <>
-                    <p>First participant: $275</p>
-                    <p>Additional participants ({children.length - 1}): ${(children.length - 1) * 250}</p>
-                    <p className="discount-note">Additional participant discount applied!</p>
-                  </>
-                ) : (
+                {children.length === 1 ? (
                   <p>Price per participant: $275</p>
+                ) : (
+                  <>
+                    <p>First participant: $250 (includes $25 multi-child discount)</p>
+                    <p>Additional participants ({children.length - 1}): ${(children.length - 1) * 275}</p>
+                  </>
                 )}
                 <div className="total-price">
                   <strong>Total: ${total}</strong>
@@ -1204,7 +1213,7 @@ export default function Register() {
                 {children.map((child, idx) => (
                   <div key={idx} className="participant-summary">
                     <span>{child.name}</span>
-                    <span>${children.length > 1 ? '250' : '275'}</span>
+                    <span>${(idx === 0 && children.length > 1) ? '250' : '275'}</span>
                   </div>
                 ))}
                 <div className="total-summary">
