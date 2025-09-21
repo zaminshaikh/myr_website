@@ -159,6 +159,23 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
           testMode: testMode
         });
 
+        // Send confirmation email after successful payment
+        try {
+          const sendConfirmationEmail = httpsCallable(functions, 'sendConfirmationEmail');
+          await sendConfirmationEmail({
+            recipientEmail: registrationData.parent.email,
+            recipientName: registrationData.parent.name,
+            registrationId: registrationId,
+            children: registrationData.children,
+            total: total,
+            type: 'payment'
+          });
+          console.log('Confirmation email sent successfully');
+        } catch (emailError) {
+          console.error('Failed to send confirmation email:', emailError);
+          // Don't fail the registration if email fails
+        }
+
         onSuccess(registrationId);
       }
 

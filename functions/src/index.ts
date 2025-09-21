@@ -30,6 +30,271 @@ const getStripe = (testMode = false) => {
 // Initialize CORS
 const corsHandler = cors({origin: true});
 
+// Helper function to send confirmation emails (can be called internally)
+const sendConfirmationEmailHelper = async (emailData: {
+  recipientEmail: string;
+  recipientName: string;
+  registrationId?: string;
+  children?: any[];
+  eventDate?: string;
+  location?: string;
+  total?: number;
+  type?: string;
+}) => {
+  const {
+    recipientEmail,
+    recipientName,
+    registrationId,
+    children,
+    eventDate = "Friday Dec 05, 2025, 4:00 PM – Sunday Dec 07, 2025, 4:00 PM",
+    location = "Florida Elks Youth Camp, 24175 SE Hwy 450, Umatilla, FL 32784, USA",
+    total,
+    type = "registration"
+  } = emailData;
+
+  // Validate required fields
+  if (!recipientEmail || !recipientName) {
+    throw new Error("Recipient email and name are required");
+  }
+
+  // Initialize Resend
+  const resend = new Resend(resendApiKey.value());
+
+  // Create email subject based on type
+  let subject = "Muslim Youth Retreat 2025 - Registration Confirmation";
+  if (type === "payment") {
+    subject = "Muslim Youth Retreat 2025 - Payment Confirmed";
+  } else if (type === "reminder") {
+    subject = "Muslim Youth Retreat 2025 - Event Reminder";
+  }
+
+  // Generate participant list HTML
+  const participantsList = children && children.length > 0 ? 
+    children.map((child: any, index: number) => `
+      <div style="background: rgba(85, 124, 186, 0.1); padding: 16px; border-radius: 12px; margin-bottom: 12px;">
+        <h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px; font-weight: 600;">
+          Participant ${index + 1}: ${child.name}
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; font-size: 14px; color: #4b5563;">
+          <div><strong>Age:</strong> ${child.age}</div>
+          <div><strong>Grade:</strong> ${child.grade}</div>
+          <div><strong>Gender:</strong> ${child.gender}</div>
+        </div>
+        ${child.dietary ? `<div style="margin-top: 8px; font-size: 14px; color: #4b5563;"><strong>Dietary:</strong> ${child.dietary}</div>` : ''}
+        ${child.medical ? `<div style="margin-top: 4px; font-size: 14px; color: #4b5563;"><strong>Medical:</strong> ${child.medical}</div>` : ''}
+      </div>
+    `).join('') : '';
+
+  // Create beautiful HTML email template
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${subject}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    </head>
+    <body style="margin: 0; padding: 0; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;">
+      <div style="max-width: 680px; margin: 0 auto; background: #ffffff; border-radius: 0;">
+        
+        <!-- Header with Gradient -->
+        <div style="background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%); padding: 40px 32px; text-align: center; border-radius: 0;">
+          <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); padding: 24px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.2); display: inline-block;">
+            <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 800; letter-spacing: -0.02em;">
+              Muslim Youth Retreat 2025
+            </h1>
+            <p style="margin: 8px 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px; font-weight: 500;">
+              ${type === 'payment' ? 'Payment Confirmed' : type === 'reminder' ? 'Event Reminder' : 'Registration Confirmed'}
+            </p>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div style="padding: 48px 32px;">
+          
+          <!-- Welcome Message -->
+          <div style="text-align: center; margin-bottom: 48px;">
+            <h2 style="margin: 0 0 16px 0; color: #1f2937; font-size: 24px; font-weight: 700; letter-spacing: -0.02em;">
+              Salaams ${recipientName}!
+            </h2>
+            <p style="margin: 0; color: #4b5563; font-size: 18px; line-height: 1.6;">
+              ${type === 'payment' ? 'Your payment has been confirmed for the Muslim Youth Retreat 2025. Thank you!' : 
+                type === 'reminder' ? 'This is a friendly reminder about the upcoming Muslim Youth Retreat 2025.' :
+                'Thank you for registering for the Muslim Youth Retreat 2025. We\'re excited to welcome you and your family to this amazing experience!'}
+            </p>
+          </div>
+
+          ${registrationId ? `
+          <!-- Registration Details -->
+          <div style="background: linear-gradient(135deg, rgba(85, 124, 186, 0.1) 0%, rgba(238, 181, 65, 0.1) 100%); padding: 32px; border-radius: 20px; margin-bottom: 32px; border: 1px solid rgba(85, 124, 186, 0.2);">
+            <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
+              <span style="background: linear-gradient(135deg, #557CBA 0%, #4A6BA8 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 16px;">✓</span>
+              Registration Details
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+              <div>
+                <strong style="color: #374151; font-weight: 600;">Registration ID:</strong>
+                <div style="background: #f3f4f6; padding: 8px 12px; border-radius: 8px; margin-top: 4px; font-family: monospace; color: #1f2937; font-weight: 600;">
+                  ${registrationId}
+                </div>
+              </div>
+              ${total ? `
+              <div>
+                <strong style="color: #374151; font-weight: 600;">Total Amount:</strong>
+                <div style="background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%); color: white; padding: 8px 12px; border-radius: 8px; margin-top: 4px; font-weight: 700; text-align: center;">
+                  $${total}
+                </div>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+          ` : ''}
+
+          ${participantsList ? `
+          <!-- Participants -->
+          <div style="margin-bottom: 32px;">
+            <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
+              <span style="background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 16px;">👥</span>
+              Registered Participants
+            </h3>
+            ${participantsList}
+          </div>
+          ` : ''}
+
+          <!-- Event Details -->
+          <div style="background: linear-gradient(135deg, #557CBA 0%, #4A6BA8 100%); color: white; padding: 32px; border-radius: 20px; margin-bottom: 32px;">
+            <h3 style="margin: 0 0 24px 0; font-size: 20px; font-weight: 700; text-align: center;">
+              Event Details
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+              <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.2); text-align: center;">
+                <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; opacity: 0.9;">When</h4>
+                <p style="margin: 0; font-size: 15px; line-height: 1.4;">${eventDate}</p>
+              </div>
+              <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.2); text-align: center;">
+                <h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; opacity: 0.9;">Where</h4>
+                <p style="margin: 0; font-size: 15px; line-height: 1.4;">${location}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- What to Bring -->
+          <div style="background: #f8fafc; padding: 32px; border-radius: 20px; margin-bottom: 32px; border: 1px solid #e2e8f0;">
+            <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 20px; font-weight: 700; display: flex; align-items: center;">
+              <span style="background: linear-gradient(135deg, #EEB541 0%, #D4A43A 100%); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 16px;">🎒</span>
+              What to Bring
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px; color: #4b5563;">
+              <div style="display: flex; align-items: center; padding: 8px 0;">
+                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
+                1 Quran
+              </div>
+              <div style="display: flex; align-items: center; padding: 8px 0;">
+                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
+                Sleeping bag/sheets
+              </div>
+              <div style="display: flex; align-items: center; padding: 8px 0;">
+                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
+                Pillow & pillowcase
+              </div>
+              <div style="display: flex; align-items: center; padding: 8px 0;">
+                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
+                Towels & toiletries
+              </div>
+              <div style="display: flex; align-items: center; padding: 8px 0;">
+                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
+                Water bottle
+              </div>
+              <div style="display: flex; align-items: center; padding: 8px 0;">
+                <span style="color: #10b981; margin-right: 8px; font-weight: bold;">✓</span>
+                Appropriate clothing
+              </div>
+            </div>
+            <p style="margin: 16px 0 0 0; font-size: 14px; color: #6b7280; font-style: italic;">
+              For a complete packing list, please refer to our FAQ section on the website.
+            </p>
+          </div>
+
+          <!-- Important Notes -->
+          <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(245, 101, 101, 0.1) 100%); padding: 24px; border-radius: 16px; border: 1px solid rgba(239, 68, 68, 0.2); margin-bottom: 32px;">
+            <h4 style="margin: 0 0 12px 0; color: #dc2626; font-size: 16px; font-weight: 600; display: flex; align-items: center;">
+              <span style="margin-right: 8px; font-size: 18px;">⚠️</span>
+              Important Reminders
+            </h4>
+            <ul style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.6;">
+              <li style="margin-bottom: 8px;">Registration deadline: <strong>November 17th, 2025</strong></li>
+              <li style="margin-bottom: 8px;">Arrival: Friday Dec 5th at 4:30 PM</li>
+              <li style="margin-bottom: 8px;">Departure: Sunday Dec 7th at 4:30 PM</li>
+              <li>Transportation is not provided - please arrange your own</li>
+            </ul>
+          </div>
+
+          <!-- Contact Information -->
+          <div style="text-align: center; padding: 32px 0; border-top: 1px solid #e5e7eb;">
+            <h4 style="margin: 0 0 16px 0; color: #1f2937; font-size: 18px; font-weight: 600;">
+              Questions? We're here to help!
+            </h4>
+            <p style="margin: 0 0 16px 0; color: #4b5563; font-size: 16px;">
+              Contact us at <a href="mailto:info@muslimyouthretreat.org" style="color: #EEB541; text-decoration: none; font-weight: 600;">info@muslimyouthretreat.org</a>
+            </p>
+            <p style="margin: 0; color: #6b7280; font-size: 14px;">
+              We can't wait to see you at the retreat! 🌟
+            </p>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #1f2937; color: white; padding: 32px; text-align: center;">
+          <div style="margin-bottom: 16px;">
+            <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #EEB541;">
+              Muslim Youth Retreat 2025
+            </h3>
+            <p style="margin: 0; color: #9ca3af; font-size: 14px;">
+              Hosted by Wise Academy
+            </p>
+          </div>
+          <div style="border-top: 1px solid #374151; padding-top: 16px;">
+            <p style="margin: 0; color: #6b7280; font-size: 12px;">
+              © 2025 Muslim Youth Retreat. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Send email using Resend
+  logger.info('Attempting to send confirmation email via Resend', {
+    to: recipientEmail,
+    subject: subject,
+    type: type,
+    registrationId: registrationId
+  });
+
+  const result = await resend.emails.send({
+    from: 'Muslim Youth Retreat <noreply@muslimyouthretreat.org>',
+    to: [recipientEmail],
+    subject: subject,
+    html: emailHtml,
+  });
+
+  logger.info(`Confirmation email sent successfully`, { 
+    messageId: result.data?.id,
+    to: recipientEmail,
+    subject: subject,
+    type: type,
+    registrationId: registrationId
+  });
+
+  return {
+    success: true,
+    message: "Confirmation email sent successfully",
+    messageId: result.data?.id,
+  };
+};
+
 // Create payment intent
 export const createPaymentIntent = onRequest(
   { secrets: [stripeSecretKey, stripeTestSecretKey] },
@@ -177,6 +442,9 @@ export const saveRegistration = onCall(async (request) => {
     await batch.commit();
 
     logger.info(`Registration saved with ID: ${registrationId}`);
+
+    // Note: Confirmation emails are now sent from the frontend for better control
+    // This avoids duplicate emails and gives frontend more flexibility
 
     return {
       success: true,
@@ -363,6 +631,10 @@ export const confirmPayment = onCall(
         });
 
         logger.info(`Payment confirmed for registration: ${registrationId}`);
+
+        // Note: Payment confirmation emails are now sent from the frontend for better control
+        // This avoids duplicate emails and gives frontend more flexibility
+
         return {success: true, status: "paid"};
       } else {
         throw new Error("Registration not found");
@@ -789,6 +1061,33 @@ export const sendContactEmail = onCall(
         throw new Error("Email service temporarily unavailable. Please try again later.");
       } else {
         throw new Error(`Failed to send contact email: ${error.message}`);
+      }
+    }
+  }
+);
+
+// Send confirmation email (public cloud function)
+export const sendConfirmationEmail = onCall(
+  { secrets: [resendApiKey] },
+  async (request) => {
+    try {
+      return await sendConfirmationEmailHelper(request.data);
+    } catch (error: any) {
+      logger.error("Error in sendConfirmationEmail cloud function:", {
+        error: error.message,
+        stack: error.stack,
+        requestData: request.data
+      });
+      
+      // Provide more specific error messages
+      if (error.statusCode === 422) {
+        throw new Error(`Email validation error: ${error.message}`);
+      } else if (error.statusCode === 429) {
+        throw new Error("Rate limit exceeded. Please try again later.");
+      } else if (error.statusCode >= 500) {
+        throw new Error("Email service temporarily unavailable. Please try again later.");
+      } else {
+        throw new Error(`Failed to send confirmation email: ${error.message}`);
       }
     }
   }
