@@ -339,6 +339,7 @@ const sendConfirmationEmailHelper = async (emailData: {
   const result = await resend.emails.send({
     from: 'Muslim Youth Retreat <registration@muslimyouthretreat.org>',
     to: [recipientEmail],
+    bcc: ['info@muslimyouthretreat.org'],
     replyTo: 'info@muslimyouthretreat.org',
     subject: subject,
     html: emailHtml,

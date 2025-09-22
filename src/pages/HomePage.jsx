@@ -150,9 +150,9 @@ const HomePage = () => {
           <div className="price-card">
             <h3>Price Includes:</h3>
             <ul>
-              <li>2 nights accommodation at a secured indoor facility that will be chaperoned by adults at a rate of more than 1 adult for every 10 participants.</li>
+              <li>2 nights of lodging in a secure indoor facility, supervised by trusted adult chaperones with a ratio of more than 1 adult for every 10 youth.</li>
               <li>6 meals</li>
-              <li>5 high-quality outdoor leadership activities run by professional teachers and trained staff from Florida Elks Youth Camp, as well as motivational talks and facilitation on leadership for Muslims, run by a professional leadership coach.</li>
+              <li>5 high-quality outdoor activities led by trained staff from Florida Elks Youth Camp, along with motivational talks and leadership workshops guided by a team of qualified facilitators and life coaches.</li>
             </ul>
           </div>
         </div>
