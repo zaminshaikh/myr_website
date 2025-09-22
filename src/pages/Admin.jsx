@@ -1235,10 +1235,8 @@ const Admin = () => {
                       {saved.agreement && Object.values(saved.agreement).some(val => val) && (
                         <div>
                           <p><strong>Agreements Status:</strong></p>
-                          <p>Liability: {saved.agreement.liability ? '✅' : '❌'}</p>
-                          <p>Medical: {saved.agreement.medical ? '✅' : '❌'}</p>
-                          <p>Photos: {saved.agreement.photos ? '✅' : '❌'}</p>
-                          <p>Conduct: {saved.agreement.conduct ? '✅' : '❌'}</p>
+                          <p>Informed Consent: {saved.agreement.informedConsent ? '✅' : '❌'}</p>
+                          <p>Medical Release: {saved.agreement.medicalRelease ? '✅' : '❌'}</p>
                         </div>
                       )}
                     </div>

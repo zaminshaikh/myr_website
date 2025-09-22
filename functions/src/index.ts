@@ -968,6 +968,8 @@ export const saveRegistrationProgress = onCall(async (request) => {
       parent: progressData.parent || {},
       children: progressData.children || [],
       agreement: progressData.agreement || {},
+      emergencyContact: progressData.emergencyContact || {},
+      signature: progressData.signature || '',
       total: estimatedTotal,
       participantCount: progressData.children?.length || 0,
       status: "incomplete",
