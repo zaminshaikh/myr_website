@@ -499,8 +499,8 @@ export default function Register() {
     }
   };
 
-  // Pricing: Single child $275, multiple children get $25 discount on first child
-  const total = children.length === 1 ? 275 : 250 + (children.length - 1) * 275;
+  // Pricing: First child $275, additional children $250 each
+  const total = children.length === 1 ? 275 : 275 + (children.length - 1) * 250;
 
   const handleNext = () => {
     setStep(step + 1);
@@ -1226,8 +1226,8 @@ export default function Register() {
                   <p>Price per participant: $275</p>
                 ) : (
                   <>
-                    <p>First participant: $250 (includes $25 multi-child discount)</p>
-                    <p>Additional participants ({children.length - 1}): ${(children.length - 1) * 275}</p>
+                    <p>First participant: $275</p>
+                    <p>Additional participants ({children.length - 1}): ${(children.length - 1) * 250}</p>
                   </>
                 )}
                 <div className="total-price">
@@ -1267,7 +1267,7 @@ export default function Register() {
                 {children.map((child, idx) => (
                   <div key={idx} className="participant-summary">
                     <span>{child.name}</span>
-                    <span>${(idx === 0 && children.length > 1) ? '250' : '275'}</span>
+                    <span>${idx === 0 ? '275' : '250'}</span>
                   </div>
                 ))}
                 <div className="total-summary">

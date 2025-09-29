@@ -959,8 +959,8 @@ export const saveRegistrationProgress = onCall(async (request) => {
       logger.info(`Creating new saved registration: ${savedRegistrationId}`);
     }
 
-    // Calculate estimated total based on children count
-    const estimatedTotal = progressData.total || (progressData.children?.length > 1 ? 250 * progressData.children.length : 275);
+    // Calculate estimated total based on children count: first child $275, additional children $250 each
+    const estimatedTotal = progressData.total || (progressData.children?.length === 1 ? 275 : 275 + (progressData.children?.length - 1) * 250);
 
     const savedRegistrationDoc = {
       savedRegistrationId,
