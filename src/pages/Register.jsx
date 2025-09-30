@@ -277,7 +277,8 @@ export default function Register() {
   const [emailError, setEmailError] = useState('');
   const [agreement, setAgreement] = useState({
     informedConsent: false,
-    medicalRelease: false
+    medicalRelease: false,
+    cancellationPolicy: false
   });
   
   const [signature, setSignature] = useState('');
@@ -567,7 +568,7 @@ export default function Register() {
   };
 
   const isStep4Valid = () => {
-    return agreement.informedConsent === true && agreement.medicalRelease === true && signature;
+    return agreement.informedConsent === true && agreement.medicalRelease === true && agreement.cancellationPolicy === true && signature;
   };
 
   // Signature functionality
@@ -1183,6 +1184,38 @@ export default function Register() {
                   />
                   <span className="radio-mark"></span>
                   I Do Not Consent
+                </label>
+              </div>
+            </div>
+
+            {/* Cancellation and Refund Policy */}
+            <div className="agreement-section">
+              <h3>Cancellation and Refund Policy</h3>
+              <div className="agreement-text">
+                <p>
+                  If you need to cancel your registration prior to November 17, 2025, your payment will be fully refunded minus a charge of $25 per participant which covers the costs of credit card fees and registration. No refunds will be issued for cancellations received on or after November 17, 2025.
+                </p>
+              </div>
+              <div className="consent-options">
+                <label className="radio-label">
+                  <input 
+                    type="radio"
+                    name="cancellationPolicy"
+                    checked={agreement.cancellationPolicy === true}
+                    onChange={e => handleAgreementChange('cancellationPolicy', true)}
+                  />
+                  <span className="radio-mark"></span>
+                  I Agree
+                </label>
+                <label className="radio-label">
+                  <input 
+                    type="radio"
+                    name="cancellationPolicy"
+                    checked={agreement.cancellationPolicy === false}
+                    onChange={e => handleAgreementChange('cancellationPolicy', false)}
+                  />
+                  <span className="radio-mark"></span>
+                  I Do Not Agree
                 </label>
               </div>
             </div>

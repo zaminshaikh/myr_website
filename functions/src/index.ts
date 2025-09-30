@@ -269,6 +269,7 @@ const sendConfirmationEmailHelper = async (emailData: {
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; font-size: 14px; color: #4b5563;">
                 <div><strong>Informed Consent:</strong> <span style="color: ${registrationData.agreement.informedConsent ? '#059669' : '#dc2626'}; font-weight: 600;">${registrationData.agreement.informedConsent ? '✓ Agreed' : '✗ Not Agreed'}</span></div>
                 <div><strong>Medical Release:</strong> <span style="color: ${registrationData.agreement.medicalRelease ? '#059669' : '#dc2626'}; font-weight: 600;">${registrationData.agreement.medicalRelease ? '✓ Agreed' : '✗ Not Agreed'}</span></div>
+                <div><strong>Cancellation Policy:</strong> <span style="color: ${registrationData.agreement.cancellationPolicy ? '#059669' : '#dc2626'}; font-weight: 600;">${registrationData.agreement.cancellationPolicy ? '✓ Agreed' : '✗ Not Agreed'}</span></div>
                 <div style="grid-column: 1 / -1;"><strong>Electronic Signature:</strong> <span style="color: #059669; font-weight: 600;">${registrationData.signature ? '✓ Provided' : '✗ Not Provided'}</span></div>
               </div>
             </div>
@@ -1413,6 +1414,38 @@ const generateWaiverPDFHelper = async (data: {
   } else {
     doc.text('[ ] I CONSENT', 20, yPos);
     doc.text('[X] I DO NOT CONSENT', 100, yPos);
+  }
+  yPos += 25; // Increased spacing after checkboxes
+  
+  // Cancellation and Refund Policy (add new page if needed)
+  if (yPos > 180) {
+    doc.addPage();
+    yPos = 30;
+  }
+  
+  doc.setFontSize(12);
+  doc.setFont("times", "bold");
+  doc.text('CANCELLATION AND REFUND POLICY', 20, yPos);
+  yPos += 10;
+  
+  doc.setFontSize(9);
+  doc.setFont("times", "normal");
+  const cancellationText = doc.splitTextToSize(
+    'If you need to cancel your registration prior to November 17, 2025, your payment will be fully refunded minus a charge of $25 per participant which covers the costs of credit card fees and registration. No refunds will be issued for cancellations received on or after November 17, 2025.',
+    170
+  );
+  doc.text(cancellationText, 20, yPos);
+  yPos += cancellationText.length * 3 + 20;
+  
+  // Cancellation consent checkbox
+  doc.setFontSize(10);
+  doc.setFont("times", "bold");
+  if (registrationData.agreement?.cancellationPolicy) {
+    doc.text('[X] I AGREE', 20, yPos);
+    doc.text('[ ] I DO NOT AGREE', 100, yPos);
+  } else {
+    doc.text('[ ] I AGREE', 20, yPos);
+    doc.text('[X] I DO NOT AGREE', 100, yPos);
   }
   yPos += 25; // Increased spacing after checkboxes
   

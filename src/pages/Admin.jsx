@@ -1237,6 +1237,7 @@ const Admin = () => {
                           <p><strong>Agreements Status:</strong></p>
                           <p>Informed Consent: {saved.agreement.informedConsent ? '✅' : '❌'}</p>
                           <p>Medical Release: {saved.agreement.medicalRelease ? '✅' : '❌'}</p>
+                          <p>Cancellation Policy: {saved.agreement.cancellationPolicy ? '✅' : '❌'}</p>
                         </div>
                       )}
                     </div>
