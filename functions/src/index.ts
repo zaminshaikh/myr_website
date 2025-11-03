@@ -554,7 +554,7 @@ export const saveRegistration = onCall(
 
 
     // Create or update main registration document
-    const registrationDoc = {
+    const registrationDoc: any = {
       registrationId,
       paymentIntentId: paymentIntentId || null,
       guardianId: guardianDoc.guardianId,
@@ -577,6 +577,18 @@ export const saveRegistration = onCall(
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
+    
+    // Add promo code information if used
+    if (registrationData.promoCode) {
+      registrationDoc.promoCode = {
+        id: registrationData.promoCode.id,
+        code: registrationData.promoCode.code,
+        discountPercent: registrationData.promoCode.discountPercent,
+        originalTotal: registrationData.originalTotal,
+        discountAmount: registrationData.discountAmount
+      };
+    }
+    
     batch.set(registrationRef, registrationDoc);
 
     // Commit the batch
@@ -1967,3 +1979,421 @@ export const bulkDeleteRegistrations = onCall(async (request) => {
     throw new Error(`Failed to bulk delete registrations: ${error.message}`);
   }
 });
+
+// ============================================================================
+// PROMO CODES MANAGEMENT
+// ============================================================================
+
+// Create promo code (for admin portal)
+export const createPromoCode = onCall(async (request) => {
+  try {
+    const { code, discountPercent, description, expiresAt, maxUses } = request.data;
+    
+    if (!code || !discountPercent) {
+      throw new Error("Code and discount percentage are required");
+    }
+    
+    if (discountPercent <= 0 || discountPercent > 100) {
+      throw new Error("Discount percentage must be between 1 and 100");
+    }
+    
+    const db = admin.firestore();
+    
+    // Check if code already exists
+    const existingCode = await db
+      .collection("promoCodes")
+      .where("code", "==", code.toUpperCase())
+      .get();
+    
+    if (!existingCode.empty) {
+      throw new Error("Promo code already exists");
+    }
+    
+    const promoCodeDoc = {
+      code: code.toUpperCase(),
+      discountPercent: Number(discountPercent),
+      description: description || '',
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+      maxUses: maxUses ? Number(maxUses) : null,
+      currentUses: 0,
+      active: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    const docRef = await db.collection("promoCodes").add(promoCodeDoc);
+    
+    logger.info(`Promo code created: ${code}`);
+    
+    return {
+      success: true,
+      promoCodeId: docRef.id,
+      message: "Promo code created successfully"
+    };
+  } catch (error: any) {
+    logger.error("Error creating promo code:", error);
+    throw new Error(`Failed to create promo code: ${error.message}`);
+  }
+});
+
+// Get all promo codes (for admin portal)
+export const getPromoCodes = onCall(async (request) => {
+  try {
+    const db = admin.firestore();
+    const snapshot = await db
+      .collection("promoCodes")
+      .orderBy("createdAt", "desc")
+      .get();
+    
+    const promoCodes = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    
+    return {
+      success: true,
+      promoCodes,
+    };
+  } catch (error: any) {
+    logger.error("Error fetching promo codes:", error);
+    throw new Error(`Failed to fetch promo codes: ${error.message}`);
+  }
+});
+
+// Update promo code (for admin portal)
+export const updatePromoCode = onCall(async (request) => {
+  try {
+    const { promoCodeId, updates } = request.data;
+    
+    if (!promoCodeId) {
+      throw new Error("Promo code ID is required");
+    }
+    
+    const db = admin.firestore();
+    const docRef = db.collection("promoCodes").doc(promoCodeId);
+    const doc = await docRef.get();
+    
+    if (!doc.exists) {
+      throw new Error("Promo code not found");
+    }
+    
+    // Validate discount percent if updating
+    if (updates.discountPercent !== undefined) {
+      if (updates.discountPercent <= 0 || updates.discountPercent > 100) {
+        throw new Error("Discount percentage must be between 1 and 100");
+      }
+      updates.discountPercent = Number(updates.discountPercent);
+    }
+    
+    // Validate maxUses if updating
+    if (updates.maxUses !== undefined && updates.maxUses !== null) {
+      updates.maxUses = Number(updates.maxUses);
+    }
+    
+    await docRef.update({
+      ...updates,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    logger.info(`Promo code updated: ${promoCodeId}`);
+    
+    return {
+      success: true,
+      message: "Promo code updated successfully"
+    };
+  } catch (error: any) {
+    logger.error("Error updating promo code:", error);
+    throw new Error(`Failed to update promo code: ${error.message}`);
+  }
+});
+
+// Delete promo code (for admin portal)
+export const deletePromoCode = onCall(async (request) => {
+  try {
+    const { promoCodeId } = request.data;
+    
+    if (!promoCodeId) {
+      throw new Error("Promo code ID is required");
+    }
+    
+    const db = admin.firestore();
+    const docRef = db.collection("promoCodes").doc(promoCodeId);
+    const doc = await docRef.get();
+    
+    if (!doc.exists) {
+      throw new Error("Promo code not found");
+    }
+    
+    await docRef.delete();
+    
+    logger.info(`Promo code deleted: ${promoCodeId}`);
+    
+    return {
+      success: true,
+      message: "Promo code deleted successfully"
+    };
+  } catch (error: any) {
+    logger.error("Error deleting promo code:", error);
+    throw new Error(`Failed to delete promo code: ${error.message}`);
+  }
+});
+
+// Validate and apply promo code (for registration page)
+export const validatePromoCode = onCall(async (request) => {
+  try {
+    const { code } = request.data;
+    
+    if (!code) {
+      throw new Error("Promo code is required");
+    }
+    
+    const db = admin.firestore();
+    
+    // Find promo code
+    const snapshot = await db
+      .collection("promoCodes")
+      .where("code", "==", code.toUpperCase())
+      .where("active", "==", true)
+      .get();
+    
+    if (snapshot.empty) {
+      return {
+        success: false,
+        message: "Invalid promo code"
+      };
+    }
+    
+    const promoCodeDoc = snapshot.docs[0];
+    const promoCode = promoCodeDoc.data();
+    
+    // Check if expired
+    if (promoCode.expiresAt && promoCode.expiresAt.toDate() < new Date()) {
+      return {
+        success: false,
+        message: "This promo code has expired"
+      };
+    }
+    
+    // Check if max uses reached
+    if (promoCode.maxUses && promoCode.currentUses >= promoCode.maxUses) {
+      return {
+        success: false,
+        message: "This promo code has reached its maximum usage limit"
+      };
+    }
+    
+    logger.info(`Promo code validated: ${code}`);
+    
+    return {
+      success: true,
+      promoCode: {
+        id: promoCodeDoc.id,
+        code: promoCode.code,
+        discountPercent: promoCode.discountPercent,
+        description: promoCode.description
+      },
+      message: `Promo code applied! ${promoCode.discountPercent}% discount`
+    };
+  } catch (error: any) {
+    logger.error("Error validating promo code:", error);
+    throw new Error(`Failed to validate promo code: ${error.message}`);
+  }
+});
+
+// Increment promo code usage (called after successful payment)
+export const incrementPromoCodeUsage = onCall(async (request) => {
+  try {
+    const { promoCodeId } = request.data;
+    
+    if (!promoCodeId) {
+      return { success: true }; // No promo code used, nothing to increment
+    }
+    
+    const db = admin.firestore();
+    const docRef = db.collection("promoCodes").doc(promoCodeId);
+    
+    await docRef.update({
+      currentUses: admin.firestore.FieldValue.increment(1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    logger.info(`Promo code usage incremented: ${promoCodeId}`);
+    
+    return {
+      success: true,
+      message: "Promo code usage updated"
+    };
+  } catch (error: any) {
+    logger.error("Error incrementing promo code usage:", error);
+    // Don't throw error here as this is not critical to payment success
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+});
+
+// ============================================================================
+// PARTIAL REFUNDS
+// ============================================================================
+
+// Process partial refund
+export const partialRefundPayment = onCall(
+  { secrets: [stripeSecretKey, stripeTestSecretKey] },
+  async (request) => {
+    logger.info("Partial refund payment function called", { data: request.data });
+    try {
+      const { paymentIntentId, amount, reason, registrationId } = request.data;
+
+      if (!paymentIntentId) {
+        throw new Error("Payment intent ID is required");
+      }
+
+      if (!registrationId) {
+        throw new Error("Registration ID is required");
+      }
+
+      if (!amount || amount <= 0) {
+        throw new Error("Refund amount must be greater than 0");
+      }
+
+      // First, get the registration to determine the test mode and validate amount
+      const db = admin.firestore();
+      const registrationQuery = db
+        .collection("registrations")
+        .where("registrationId", "==", registrationId);
+      
+      const registrationSnapshot = await registrationQuery.get();
+      
+      if (registrationSnapshot.empty) {
+        throw new Error("Registration not found");
+      }
+      
+      const registrationDoc = registrationSnapshot.docs[0];
+      const registrationData = registrationDoc.data();
+      const useTestMode = registrationData.testMode === true;
+      
+      // Validate refund amount
+      const totalPaid = registrationData.total;
+      const previousRefunds = registrationData.refundAmount || 0;
+      const remainingAmount = totalPaid - previousRefunds;
+      
+      if (amount > remainingAmount) {
+        throw new Error(`Refund amount ($${amount}) exceeds remaining amount ($${remainingAmount})`);
+      }
+      
+      logger.info("Processing partial refund", { 
+        registrationId, 
+        useTestMode,
+        amount,
+        totalPaid,
+        previousRefunds,
+        remainingAmount
+      });
+      
+      // Initialize Stripe with the correct mode
+      const stripe = getStripe(useTestMode);
+      
+      // Create refund with Stripe
+      const refund = await stripe.refunds.create({
+        payment_intent: paymentIntentId,
+        amount: Math.round(amount * 100), // Convert to cents
+        reason: reason || 'requested_by_customer',
+        metadata: {
+          registrationId: registrationId,
+          refundedBy: 'admin_portal',
+          refundDate: new Date().toISOString(),
+          refundType: 'partial'
+        },
+      });
+
+      // Calculate total refunded amount
+      const totalRefunded = previousRefunds + amount;
+      const isFullyRefunded = totalRefunded >= totalPaid;
+
+      // Update registration with partial refund info
+      const updateData: any = {
+        status: isFullyRefunded ? "refunded" : "partially_refunded",
+        refundAmount: totalRefunded,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      // Store refund history
+      const refundHistory = registrationData.refundHistory || [];
+      refundHistory.push({
+        refundId: refund.id,
+        amount: amount,
+        reason: reason || 'requested_by_customer',
+        refundedAt: new Date().toISOString()
+      });
+      updateData.refundHistory = refundHistory;
+
+      // For the most recent refund, also store top-level for backward compatibility
+      updateData.refundId = refund.id;
+      updateData.refundedAt = admin.firestore.FieldValue.serverTimestamp();
+      updateData.refundReason = reason || 'requested_by_customer';
+
+      await registrationDoc.ref.update(updateData);
+
+      // For partial refunds, keep guardian and participants active
+      // For full refunds, mark them inactive
+      if (isFullyRefunded) {
+        const batch = db.batch();
+
+        // Mark guardian as inactive if they exist
+        if (registrationData.guardianId) {
+          const guardianQuery = db
+            .collection("guardians")
+            .where("guardianId", "==", registrationData.guardianId);
+          
+          const guardianSnapshot = await guardianQuery.get();
+          if (!guardianSnapshot.empty) {
+            const guardianDoc = guardianSnapshot.docs[0];
+            batch.update(guardianDoc.ref, {
+              active: false,
+              inactivatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              inactivatedReason: 'registration_fully_refunded',
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            logger.info(`Marking guardian ${registrationData.guardianId} as inactive (full refund)`);
+          }
+        }
+
+        // Mark all participants as inactive
+        const participantsQuery = db
+          .collection("participants")
+          .where("registrationId", "==", registrationId);
+        
+        const participantsSnapshot = await participantsQuery.get();
+        participantsSnapshot.docs.forEach((participantDoc) => {
+          batch.update(participantDoc.ref, {
+            active: false,
+            inactivatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            inactivatedReason: 'registration_fully_refunded',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        });
+        
+        if (participantsSnapshot.size > 0) {
+          logger.info(`Marking ${participantsSnapshot.size} participants as inactive for registration ${registrationId} (full refund)`);
+        }
+
+        await batch.commit();
+      }
+
+      logger.info(`Partial refund processed for registration: ${registrationId}, Refund ID: ${refund.id}, Amount: $${amount}, Total Refunded: $${totalRefunded}`);
+      
+      return {
+        success: true,
+        refundId: refund.id,
+        refundAmount: amount,
+        totalRefunded: totalRefunded,
+        status: isFullyRefunded ? "refunded" : "partially_refunded",
+        isFullyRefunded: isFullyRefunded
+      };
+    } catch (error: any) {
+      logger.error("Error processing partial refund:", error);
+      throw new Error(`Failed to process partial refund: ${error.message}`);
+    }
+  }
+);

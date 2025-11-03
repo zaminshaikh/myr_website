@@ -140,7 +140,10 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
         const registrationResult = await saveRegistration({
           registrationData: {
             ...registrationData,
-            total: total
+            total: total,
+            promoCode: registrationData.promoCode,
+            originalTotal: registrationData.originalTotal,
+            discountAmount: registrationData.discountAmount
           },
           paymentIntentId: paymentIntent.id,
           testMode: testMode
@@ -151,6 +154,17 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
         }
 
         const registrationId = registrationResult.data.registrationId;
+
+        // Increment promo code usage if one was used
+        if (registrationData.promoCode?.id) {
+          try {
+            const incrementPromoCodeUsage = httpsCallable(functions, 'incrementPromoCodeUsage');
+            await incrementPromoCodeUsage({ promoCodeId: registrationData.promoCode.id });
+          } catch (promoError) {
+            console.error('Failed to increment promo code usage:', promoError);
+            // Don't fail the registration if this fails
+          }
+        }
 
         // Confirm payment in our backend
         const confirmPayment = httpsCallable(functions, 'confirmPayment');
@@ -231,11 +245,11 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
         disabled={!stripe || loading || !clientSecret}
         className={`pay-button ${testMode ? 'test-mode' : ''}`}
       >
-        {loading ? 'Processing...' : `${testMode ? '🧪 TEST: ' : ''}Complete Registration - $${total}`}
+        {loading ? 'Processing...' : `${testMode ? '?? TEST: ' : ''}Complete Registration - $${total}`}
       </button>
       
       <div className="payment-security">
-        <p>🔒 Your payment information is secure and encrypted</p>
+        <p>?? Your payment information is secure and encrypted</p>
       </div>
     </form>
   );
@@ -287,6 +301,11 @@ export default function Register() {
   const [testMode, setTestMode] = useState(false);
   const [showContinueDialog, setShowContinueDialog] = useState(false);
   const [hasSavedData, setHasSavedData] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromoCode, setAppliedPromoCode] = useState(null);
+  const [promoCodeError, setPromoCodeError] = useState('');
+  const [promoCodeSuccess, setPromoCodeSuccess] = useState('');
+  const [applyingPromoCode, setApplyingPromoCode] = useState(false);
 
   // Auto-save registration data to localStorage and backend
   const saveRegistrationProgress = async (progressData) => {
@@ -501,7 +520,51 @@ export default function Register() {
   };
 
   // Pricing: First child $275, additional children $250 each
-  const total = children.length === 1 ? 275 : 275 + (children.length - 1) * 250;
+  const baseTotal = children.length === 1 ? 275 : 275 + (children.length - 1) * 250;
+  
+  // Apply promo code discount if available
+  const discountAmount = appliedPromoCode ? (baseTotal * appliedPromoCode.discountPercent / 100) : 0;
+  const total = baseTotal - discountAmount;
+
+  const handleApplyPromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoCodeError('Please enter a promo code');
+      return;
+    }
+
+    setApplyingPromoCode(true);
+    setPromoCodeError('');
+    setPromoCodeSuccess('');
+
+    try {
+      const validatePromoCode = httpsCallable(functions, 'validatePromoCode');
+      const result = await validatePromoCode({ code: promoCode.trim() });
+
+      if (result.data.success) {
+        setAppliedPromoCode(result.data.promoCode);
+        setPromoCodeSuccess(result.data.message);
+        setPromoCodeError('');
+      } else {
+        setPromoCodeError(result.data.message);
+        setPromoCodeSuccess('');
+        setAppliedPromoCode(null);
+      }
+    } catch (error) {
+      console.error('Error validating promo code:', error);
+      setPromoCodeError('Failed to validate promo code. Please try again.');
+      setPromoCodeSuccess('');
+      setAppliedPromoCode(null);
+    } finally {
+      setApplyingPromoCode(false);
+    }
+  };
+
+  const handleRemovePromoCode = () => {
+    setAppliedPromoCode(null);
+    setPromoCode('');
+    setPromoCodeError('');
+    setPromoCodeSuccess('');
+  };
 
   const handleNext = () => {
     setStep(step + 1);
@@ -713,7 +776,7 @@ export default function Register() {
     return (
       <div className="register-container">
         <div className="register-header">
-          <Link to="/" className="back-link">← Back to Home</Link>
+          <Link to="/" className="back-link">? Back to Home</Link>
           <h1>Register for Muslim Youth Retreat 2025</h1>
         </div>
         <div className="registration-disabled">
@@ -730,7 +793,7 @@ export default function Register() {
   return (
     <div className="register-container">
       <div className="register-header">
-        <Link to="/" className="back-link">← Back to Home</Link>
+        <Link to="/" className="back-link">? Back to Home</Link>
         <h1>Register for Muslim Youth Retreat 2025</h1>
         <div className="progress-bar">
           <div className={`progress-step ${step >= 1 ? 'active' : ''}`}>1</div>
@@ -1288,12 +1351,85 @@ export default function Register() {
             <h2>Payment Information</h2>
             {testMode && (
               <div className="test-mode-banner">
-                🧪 <strong>TEST MODE ACTIVE</strong> - No real charges will be made
+                ?? <strong>TEST MODE ACTIVE</strong> - No real charges will be made
                 <div style={{fontSize: '12px', marginTop: '5px'}}>
                   Use test card: 4242 4242 4242 4242
                 </div>
               </div>
             )}
+            {/* Promo Code Section */}
+            <div className="promo-code-section" style={{marginBottom: '20px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px'}}>
+              <h3>Have a Promo Code?</h3>
+              {!appliedPromoCode ? (
+                <div style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
+                  <input
+                    type="text"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                    placeholder="Enter promo code"
+                    disabled={applyingPromoCode}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      border: '1px solid #ced4da',
+                      borderRadius: '4px',
+                      textTransform: 'uppercase'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyPromoCode}
+                    disabled={applyingPromoCode || !promoCode.trim()}
+                    style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: applyingPromoCode || !promoCode.trim() ? 'not-allowed' : 'pointer',
+                      opacity: applyingPromoCode || !promoCode.trim() ? 0.6 : 1
+                    }}
+                  >
+                    {applyingPromoCode ? 'Applying...' : 'Apply'}
+                  </button>
+                </div>
+              ) : (
+                <div style={{marginTop: '10px', padding: '10px', backgroundColor: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '4px'}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div>
+                      <strong style={{color: '#155724'}}>{appliedPromoCode.code}</strong> - {appliedPromoCode.discountPercent}% off
+                      {appliedPromoCode.description && <div style={{fontSize: '14px', color: '#155724'}}>{appliedPromoCode.description}</div>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemovePromoCode}
+                      style={{
+                        padding: '5px 10px',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              )}
+              {promoCodeError && (
+                <div style={{marginTop: '10px', color: '#dc3545', fontSize: '14px'}}>
+                  {promoCodeError}
+                </div>
+              )}
+              {promoCodeSuccess && (
+                <div style={{marginTop: '10px', color: '#28a745', fontSize: '14px'}}>
+                  {promoCodeSuccess}
+                </div>
+              )}
+            </div>
+
             <div className="payment-summary">
               <h3>Order Summary</h3>
               <div className="summary-details">
@@ -1303,8 +1439,20 @@ export default function Register() {
                     <span>${idx === 0 ? '275' : '250'}</span>
                   </div>
                 ))}
+                {appliedPromoCode && (
+                  <>
+                    <div className="participant-summary">
+                      <span>Subtotal</span>
+                      <span>${baseTotal}</span>
+                    </div>
+                    <div className="participant-summary" style={{color: '#28a745'}}>
+                      <span>Discount ({appliedPromoCode.discountPercent}%)</span>
+                      <span>-${discountAmount.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
                 <div className="total-summary">
-                  <strong>Total: ${total}</strong>
+                  <strong>Total: ${total.toFixed(2)}</strong>
                 </div>
               </div>
             </div>
@@ -1319,7 +1467,10 @@ export default function Register() {
                     ...emergencyContact,
                     relationship: emergencyContact.relationship === 'Other' ? customRelationship : emergencyContact.relationship
                   }, 
-                  signature 
+                  signature,
+                  promoCode: appliedPromoCode,
+                  originalTotal: baseTotal,
+                  discountAmount: discountAmount
                 }}
                 total={total}
                 onSuccess={handlePaymentSuccess}
