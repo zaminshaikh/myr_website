@@ -588,11 +588,25 @@ const Admin = () => {
   };
 
   const handleRefund = async (registration) => {
+    // Calculate remaining amount if there have been partial refunds
+    const totalPaid = registration.total;
+    const previousRefunds = registration.refundAmount || 0;
+    const remainingAmount = totalPaid - previousRefunds;
+
+    if (remainingAmount <= 0) {
+      alert('This registration has already been fully refunded.');
+      return;
+    }
+
+    const isPartiallyRefunded = registration.status === 'partially_refunded' || previousRefunds > 0;
+
     const confirmRefund = window.confirm(
-      `Are you sure you want to refund the payment for ${registration.parent?.name || 'this registration'}?\n\n` +
-      `Amount: $${registration.total}\n` +
+      `Are you sure you want to ${isPartiallyRefunded ? 'refund the remaining amount' : 'fully refund'} for ${registration.parent?.name || 'this registration'}?\n\n` +
+      `Total Paid: $${totalPaid}\n` +
+      (isPartiallyRefunded ? `Previously Refunded: $${previousRefunds}\n` : '') +
+      `${isPartiallyRefunded ? 'Remaining ' : ''}Amount to Refund: $${remainingAmount}\n` +
       `Registration ID: ${registration.registrationId}\n\n` +
-      `This action will process a full refund through Stripe and cannot be undone.`
+      `This action will process a ${isPartiallyRefunded ? 'refund for the remaining amount' : 'full refund'} through Stripe and cannot be undone.`
     );
 
     if (!confirmRefund) return;
@@ -603,7 +617,7 @@ const Admin = () => {
       const result = await refundPayment({
         paymentIntentId: registration.paymentIntentId,
         registrationId: registration.registrationId,
-        amount: registration.total,
+        amount: remainingAmount, // Use remaining amount instead of total
         reason: 'requested_by_customer'
       });
 
