@@ -862,11 +862,26 @@ export const refundPayment = onCall(
       const batch = db.batch();
       const registrationDoc = registrationSnapshot.docs[0];
 
+      // Calculate total refunded (including any previous partial refunds)
+      const previousRefunds = registrationData.refundAmount || 0;
+      const totalRefunded = refund.amount / 100; // Convert back to dollars
+
+      // Store refund history
+      const refundHistory = registrationData.refundHistory || [];
+      refundHistory.push({
+        refundId: refund.id,
+        amount: refund.amount / 100,
+        reason: reason || 'requested_by_customer',
+        refundedAt: new Date().toISOString(),
+        refundType: 'full'
+      });
+
       // Update registration status
       batch.update(registrationDoc.ref, {
         status: "refunded",
         refundId: refund.id,
-        refundAmount: refund.amount / 100, // Convert back to dollars
+        refundAmount: totalRefunded,
+        refundHistory: refundHistory,
         refundedAt: admin.firestore.FieldValue.serverTimestamp(),
         refundReason: reason || 'requested_by_customer',
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -2324,7 +2339,8 @@ export const partialRefundPayment = onCall(
         refundId: refund.id,
         amount: amount,
         reason: reason || 'requested_by_customer',
-        refundedAt: new Date().toISOString()
+        refundedAt: new Date().toISOString(),
+        refundType: isFullyRefunded ? 'partial_completing_full' : 'partial'
       });
       updateData.refundHistory = refundHistory;
 
