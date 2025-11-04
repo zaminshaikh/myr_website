@@ -26,12 +26,23 @@ const Admin = () => {
   const [selectedRegistrations, setSelectedRegistrations] = useState([]);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [registrationMessage, setRegistrationMessage] = useState('Registration is currently unavailable. Please check back later.');
+  const [promoCodes, setPromoCodes] = useState([]);
+  const [showPromoCodeForm, setShowPromoCodeForm] = useState(false);
+  const [editingPromoCode, setEditingPromoCode] = useState(null);
+  const [promoCodeForm, setPromoCodeForm] = useState({
+    code: '',
+    discountPercent: '',
+    description: '',
+    expiresAt: '',
+    maxUses: ''
+  });
   const { currentUser, signout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchAllData();
     fetchRegistrationSettings();
+    fetchPromoCodes();
   }, []);
 
   const fetchAllData = async () => {
@@ -42,7 +53,8 @@ const Admin = () => {
         fetchGuardians(), 
         fetchParticipants(),
         fetchSavedRegistrations(),
-        fetchWaivers()
+        fetchWaivers(),
+        fetchPromoCodes()
       ]);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -147,6 +159,188 @@ const Admin = () => {
       console.error('Error updating registration settings:', error);
       alert(`Failed to update registration settings: ${error.message}`);
     }
+  };
+
+  // Promo Code Functions
+  const fetchPromoCodes = async () => {
+    try {
+      const getPromoCodes = httpsCallable(functions, 'getPromoCodes');
+      const result = await getPromoCodes();
+      
+      if (result.data.success) {
+        setPromoCodes(result.data.promoCodes || []);
+      } else {
+        console.warn('Failed to fetch promo codes:', result.data);
+        setPromoCodes([]);
+      }
+    } catch (error) {
+      console.warn('Error fetching promo codes:', error);
+      setPromoCodes([]);
+    }
+  };
+
+  const handleCreatePromoCode = async (e) => {
+    e.preventDefault();
+    
+    if (!promoCodeForm.code || !promoCodeForm.discountPercent) {
+      alert('Code and discount percentage are required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const createPromoCode = httpsCallable(functions, 'createPromoCode');
+      const result = await createPromoCode({
+        code: promoCodeForm.code,
+        discountPercent: parseFloat(promoCodeForm.discountPercent),
+        description: promoCodeForm.description,
+        expiresAt: promoCodeForm.expiresAt || null,
+        maxUses: promoCodeForm.maxUses ? parseInt(promoCodeForm.maxUses) : null
+      });
+
+      if (result.data.success) {
+        alert('Promo code created successfully!');
+        setShowPromoCodeForm(false);
+        setPromoCodeForm({
+          code: '',
+          discountPercent: '',
+          description: '',
+          expiresAt: '',
+          maxUses: ''
+        });
+        await fetchPromoCodes();
+      } else {
+        throw new Error('Failed to create promo code');
+      }
+    } catch (error) {
+      console.error('Error creating promo code:', error);
+      alert(`Failed to create promo code: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePromoCode = async (e) => {
+    e.preventDefault();
+    
+    if (!editingPromoCode) return;
+
+    try {
+      setLoading(true);
+      const updatePromoCode = httpsCallable(functions, 'updatePromoCode');
+      
+      const updates = {
+        code: promoCodeForm.code,
+        discountPercent: parseFloat(promoCodeForm.discountPercent),
+        description: promoCodeForm.description,
+        expiresAt: promoCodeForm.expiresAt || null,
+        maxUses: promoCodeForm.maxUses ? parseInt(promoCodeForm.maxUses) : null,
+        active: editingPromoCode.active
+      };
+
+      const result = await updatePromoCode({
+        promoCodeId: editingPromoCode.id,
+        updates: updates
+      });
+
+      if (result.data.success) {
+        alert('Promo code updated successfully!');
+        setEditingPromoCode(null);
+        setShowPromoCodeForm(false);
+        setPromoCodeForm({
+          code: '',
+          discountPercent: '',
+          description: '',
+          expiresAt: '',
+          maxUses: ''
+        });
+        await fetchPromoCodes();
+      } else {
+        throw new Error('Failed to update promo code');
+      }
+    } catch (error) {
+      console.error('Error updating promo code:', error);
+      alert(`Failed to update promo code: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePromoCode = async (promoCode) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete the promo code "${promoCode.code}"?\n\n` +
+      `This action cannot be undone.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+      const deletePromoCode = httpsCallable(functions, 'deletePromoCode');
+      const result = await deletePromoCode({
+        promoCodeId: promoCode.id
+      });
+
+      if (result.data.success) {
+        alert('Promo code deleted successfully!');
+        await fetchPromoCodes();
+      } else {
+        throw new Error('Failed to delete promo code');
+      }
+    } catch (error) {
+      console.error('Error deleting promo code:', error);
+      alert(`Failed to delete promo code: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTogglePromoCodeActive = async (promoCode) => {
+    try {
+      setLoading(true);
+      const updatePromoCode = httpsCallable(functions, 'updatePromoCode');
+      const result = await updatePromoCode({
+        promoCodeId: promoCode.id,
+        updates: {
+          active: !promoCode.active
+        }
+      });
+
+      if (result.data.success) {
+        await fetchPromoCodes();
+      } else {
+        throw new Error('Failed to toggle promo code');
+      }
+    } catch (error) {
+      console.error('Error toggling promo code:', error);
+      alert(`Failed to toggle promo code: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditPromoCode = (promoCode) => {
+    setEditingPromoCode(promoCode);
+    setPromoCodeForm({
+      code: promoCode.code,
+      discountPercent: promoCode.discountPercent.toString(),
+      description: promoCode.description || '',
+      expiresAt: promoCode.expiresAt ? new Date(promoCode.expiresAt.seconds * 1000).toISOString().split('T')[0] : '',
+      maxUses: promoCode.maxUses ? promoCode.maxUses.toString() : ''
+    });
+    setShowPromoCodeForm(true);
+  };
+
+  const handleCancelPromoCodeForm = () => {
+    setShowPromoCodeForm(false);
+    setEditingPromoCode(null);
+    setPromoCodeForm({
+      code: '',
+      discountPercent: '',
+      description: '',
+      expiresAt: '',
+      maxUses: ''
+    });
   };
 
   // Helper function to determine if guardian/participant is from test payment
@@ -377,6 +571,7 @@ const Admin = () => {
       case 'paid': return '#28a745';
       case 'pending': return '#ffc107';
       case 'refunded': return '#6c757d';
+      case 'partially_refunded': return '#fd7e14';
       default: return '#6c757d';
     }
   };
@@ -393,11 +588,25 @@ const Admin = () => {
   };
 
   const handleRefund = async (registration) => {
+    // Calculate remaining amount if there have been partial refunds
+    const totalPaid = registration.total;
+    const previousRefunds = registration.refundAmount || 0;
+    const remainingAmount = totalPaid - previousRefunds;
+
+    if (remainingAmount <= 0) {
+      alert('This registration has already been fully refunded.');
+      return;
+    }
+
+    const isPartiallyRefunded = registration.status === 'partially_refunded' || previousRefunds > 0;
+
     const confirmRefund = window.confirm(
-      `Are you sure you want to refund the payment for ${registration.parent?.name || 'this registration'}?\n\n` +
-      `Amount: $${registration.total}\n` +
+      `Are you sure you want to ${isPartiallyRefunded ? 'refund the remaining amount' : 'fully refund'} for ${registration.parent?.name || 'this registration'}?\n\n` +
+      `Total Paid: $${totalPaid}\n` +
+      (isPartiallyRefunded ? `Previously Refunded: $${previousRefunds}\n` : '') +
+      `${isPartiallyRefunded ? 'Remaining ' : ''}Amount to Refund: $${remainingAmount}\n` +
       `Registration ID: ${registration.registrationId}\n\n` +
-      `This action will process a full refund through Stripe and cannot be undone.`
+      `This action will process a ${isPartiallyRefunded ? 'refund for the remaining amount' : 'full refund'} through Stripe and cannot be undone.`
     );
 
     if (!confirmRefund) return;
@@ -408,7 +617,7 @@ const Admin = () => {
       const result = await refundPayment({
         paymentIntentId: registration.paymentIntentId,
         registrationId: registration.registrationId,
-        amount: registration.total,
+        amount: remainingAmount, // Use remaining amount instead of total
         reason: 'requested_by_customer'
       });
 
@@ -426,6 +635,82 @@ const Admin = () => {
     }
   };
 
+  const handlePartialRefund = async (registration) => {
+    const totalPaid = registration.total;
+    const previousRefunds = registration.refundAmount || 0;
+    const remainingAmount = totalPaid - previousRefunds;
+
+    if (remainingAmount <= 0) {
+      alert('This registration has already been fully refunded.');
+      return;
+    }
+
+    const refundAmountStr = prompt(
+      `Enter the partial refund amount for ${registration.parent?.name || 'this registration'}:\n\n` +
+      `Total Paid: $${totalPaid}\n` +
+      `Previous Refunds: $${previousRefunds}\n` +
+      `Remaining Amount: $${remainingAmount}\n\n` +
+      `Enter amount to refund (max $${remainingAmount}):`
+    );
+
+    if (!refundAmountStr) return; // User cancelled
+
+    const refundAmount = parseFloat(refundAmountStr);
+
+    if (isNaN(refundAmount) || refundAmount <= 0) {
+      alert('Please enter a valid positive amount.');
+      return;
+    }
+
+    if (refundAmount > remainingAmount) {
+      alert(`Refund amount cannot exceed remaining amount of $${remainingAmount}`);
+      return;
+    }
+
+    const reason = prompt('Enter refund reason (optional):', 'requested_by_customer');
+    if (reason === null) return; // User cancelled
+
+    const confirmRefund = window.confirm(
+      `Are you sure you want to process a partial refund?\n\n` +
+      `Refund Amount: $${refundAmount}\n` +
+      `Remaining After Refund: $${(remainingAmount - refundAmount).toFixed(2)}\n` +
+      `Registration ID: ${registration.registrationId}\n\n` +
+      `This action will process a refund through Stripe and cannot be undone.`
+    );
+
+    if (!confirmRefund) return;
+
+    try {
+      setLoading(true);
+      const partialRefundPayment = httpsCallable(functions, 'partialRefundPayment');
+      const result = await partialRefundPayment({
+        paymentIntentId: registration.paymentIntentId,
+        registrationId: registration.registrationId,
+        amount: refundAmount,
+        reason: reason || 'requested_by_customer'
+      });
+
+      if (result.data.success) {
+        const status = result.data.isFullyRefunded ? 'Full refund completed' : 'Partial refund processed';
+        alert(
+          `${status}!\n\n` +
+          `Refund ID: ${result.data.refundId}\n` +
+          `Refund Amount: $${result.data.refundAmount}\n` +
+          `Total Refunded: $${result.data.totalRefunded}\n` +
+          `Status: ${result.data.status}`
+        );
+        await fetchAllData(); // Refresh data
+      } else {
+        throw new Error('Partial refund failed');
+      }
+    } catch (error) {
+      console.error('Error processing partial refund:', error);
+      alert(`Failed to process partial refund: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (registration) => {
     const confirmDelete = window.confirm(
       `Are you sure you want to PERMANENTLY DELETE this registration?\n\n` +
@@ -433,9 +718,9 @@ const Admin = () => {
       `Registration ID: ${registration.registrationId}\n` +
       `Participants: ${registration.children?.length || 0}\n\n` +
       `This action will:\n` +
-      `• Delete the registration completely\n` +
-      `• Remove all participant records\n` +
-      `• Remove guardian record (if no other registrations)\n\n` +
+      `? Delete the registration completely\n` +
+      `? Remove all participant records\n` +
+      `? Remove guardian record (if no other registrations)\n\n` +
       `THIS CANNOT BE UNDONE!`
     );
 
@@ -512,11 +797,11 @@ const Admin = () => {
     const selectedRegs = registrations.filter(reg => selectedRegistrations.includes(reg.registrationId));
     const confirmDelete = window.confirm(
       `Are you sure you want to PERMANENTLY DELETE ${selectedRegistrations.length} registration(s)?\n\n` +
-      `Selected registrations:\n${selectedRegs.map(reg => `• ${reg.parent?.name || 'N/A'} (${reg.registrationId})`).join('\n')}\n\n` +
+      `Selected registrations:\n${selectedRegs.map(reg => `? ${reg.parent?.name || 'N/A'} (${reg.registrationId})`).join('\n')}\n\n` +
       `This action will:\n` +
-      `• Delete all selected registrations completely\n` +
-      `• Remove all participant records\n` +
-      `• Remove guardian records (if no other registrations)\n\n` +
+      `? Delete all selected registrations completely\n` +
+      `? Remove all participant records\n` +
+      `? Remove guardian records (if no other registrations)\n\n` +
       `THIS CANNOT BE UNDONE!`
     );
 
@@ -735,6 +1020,12 @@ const Admin = () => {
           Waivers ({waivers.length})
         </button>
         <button 
+          className={`tab-button ${activeTab === 'promoCodes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('promoCodes')}
+        >
+          Promo Codes ({promoCodes.length})
+        </button>
+        <button 
           className={`tab-button ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
@@ -761,6 +1052,7 @@ const Admin = () => {
                 <option value="all">All Status</option>
                 <option value="paid">Paid</option>
                 <option value="pending">Pending</option>
+                <option value="partially_refunded">Partially Refunded</option>
                 <option value="refunded">Refunded</option>
               </select>
               <select
@@ -894,7 +1186,7 @@ const Admin = () => {
                           </span>
                           {registration.testMode && (
                             <span className="test-payment-badge" title="Test Payment - No real money was charged">
-                              🧪 TEST
+                              ?? TEST
                             </span>
                           )}
                         </div>
@@ -928,14 +1220,23 @@ const Admin = () => {
                           <span className="label">Actions</span>
                           <div className="value">
                             <div className="action-buttons">
-                              {(registration.status === 'paid' || registration.status === 'PAID') && registration.paymentIntentId && (
-                                <button
-                                  onClick={() => handleRefund(registration)}
-                                  className="btn-refund"
-                                  title={`Process full refund for $${registration.total}`}
-                                >
-                                  Refund
-                                </button>
+                              {(registration.status === 'paid' || registration.status === 'PAID' || registration.status === 'partially_refunded') && registration.paymentIntentId && (
+                                <>
+                                  <button
+                                    onClick={() => handlePartialRefund(registration)}
+                                    className="btn-refund"
+                                    title={`Process partial refund`}
+                                  >
+                                    Partial Refund
+                                  </button>
+                                  <button
+                                    onClick={() => handleRefund(registration)}
+                                    className="btn-refund"
+                                    title={`Process full refund for $${registration.total}`}
+                                  >
+                                    Full Refund
+                                  </button>
+                                </>
                               )}
                               <button
                                 onClick={() => handleDelete(registration)}
@@ -984,15 +1285,41 @@ const Admin = () => {
                       <div className="detail-section">
                         <h4>Payment Information</h4>
                         <p><strong>Payment Intent ID:</strong> {registration.paymentIntentId}</p>
+                        <p><strong>Total Paid:</strong> ${registration.total}</p>
                         {registration.paymentConfirmedAt && (
                           <p><strong>Payment Confirmed:</strong> {formatDate(registration.paymentConfirmedAt)}</p>
                         )}
-                        {registration.status === 'refunded' && (
+                        {registration.promoCode && (
                           <>
-                            <p><strong>Refund ID:</strong> {registration.refundId || 'N/A'}</p>
-                            <p><strong>Refund Amount:</strong> ${registration.refundAmount || registration.total}</p>
-                            <p><strong>Refunded At:</strong> {formatDate(registration.refundedAt)}</p>
-                            <p><strong>Refund Reason:</strong> {registration.refundReason || 'N/A'}</p>
+                            <p><strong>Promo Code Used:</strong> {registration.promoCode.code} ({registration.promoCode.discountPercent}% off)</p>
+                            <p><strong>Original Amount:</strong> ${registration.promoCode.originalTotal}</p>
+                            <p><strong>Discount Amount:</strong> ${registration.promoCode.discountAmount}</p>
+                          </>
+                        )}
+                        {(registration.status === 'refunded' || registration.status === 'partially_refunded') && (
+                          <>
+                            <p><strong>Total Refunded:</strong> ${registration.refundAmount || registration.total}</p>
+                            <p><strong>Remaining Amount:</strong> ${(registration.total - (registration.refundAmount || 0)).toFixed(2)}</p>
+                            {registration.refundHistory && registration.refundHistory.length > 0 ? (
+                              <>
+                                <p><strong>Refund History:</strong></p>
+                                {registration.refundHistory.map((refund, idx) => (
+                                  <div key={idx} style={{marginLeft: '20px', marginTop: '5px', paddingTop: '5px', borderTop: idx > 0 ? '1px solid #e5e7eb' : 'none'}}>
+                                    <p style={{margin: '2px 0'}}><em>Refund #{idx + 1} ({refund.refundType === 'full' ? 'Full Refund' : refund.refundType === 'partial_completing_full' ? 'Partial (Completing Full)' : 'Partial Refund'})</em></p>
+                                    <p style={{margin: '2px 0'}}>Amount: ${refund.amount}</p>
+                                    <p style={{margin: '2px 0'}}>Date: {new Date(refund.refundedAt).toLocaleString()}</p>
+                                    <p style={{margin: '2px 0'}}>Reason: {refund.reason}</p>
+                                    <p style={{margin: '2px 0', fontSize: '11px', color: '#6b7280'}}>Refund ID: {refund.refundId}</p>
+                                  </div>
+                                ))}
+                              </>
+                            ) : (
+                              <>
+                                <p><strong>Refund ID:</strong> {registration.refundId || 'N/A'}</p>
+                                <p><strong>Refunded At:</strong> {formatDate(registration.refundedAt)}</p>
+                                <p><strong>Refund Reason:</strong> {registration.refundReason || 'N/A'}</p>
+                              </>
+                            )}
                           </>
                         )}
                       </div>
@@ -1058,7 +1385,7 @@ const Admin = () => {
                       <div className="table-cell">
                         {isTestPayment(guardian.guardianId) && (
                           <span className="test-payment-badge" title="Test Payment - No real money was charged">
-                            🧪 TEST
+                            ?? TEST
                           </span>
                         )}
                       </div>
@@ -1121,7 +1448,7 @@ const Admin = () => {
                       <div className="table-cell">
                         {isTestPayment(participant.guardianId, participant.participantId) && (
                           <span className="test-payment-badge" title="Test Payment - No real money was charged">
-                            🧪 TEST
+                            ?? TEST
                           </span>
                         )}
                       </div>
@@ -1235,9 +1562,9 @@ const Admin = () => {
                       {saved.agreement && Object.values(saved.agreement).some(val => val) && (
                         <div>
                           <p><strong>Agreements Status:</strong></p>
-                          <p>Informed Consent: {saved.agreement.informedConsent ? '✅' : '❌'}</p>
-                          <p>Medical Release: {saved.agreement.medicalRelease ? '✅' : '❌'}</p>
-                          <p>Cancellation Policy: {saved.agreement.cancellationPolicy ? '✅' : '❌'}</p>
+                          <p>Informed Consent: {saved.agreement.informedConsent ? '?' : '?'}</p>
+                          <p>Medical Release: {saved.agreement.medicalRelease ? '?' : '?'}</p>
+                          <p>Cancellation Policy: {saved.agreement.cancellationPolicy ? '?' : '?'}</p>
                         </div>
                       )}
                     </div>
@@ -1319,6 +1646,241 @@ const Admin = () => {
           </div>
         )}
 
+        {activeTab === 'promoCodes' && (
+          <div className="promo-codes-section">
+            <div className="promo-codes-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+              <h2>Promo Codes Management</h2>
+              <button 
+                onClick={() => setShowPromoCodeForm(true)}
+                className="btn-add-promo"
+                style={{
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                + Create Promo Code
+              </button>
+            </div>
+
+            {showPromoCodeForm && (
+              <div className="promo-code-form-container" style={{
+                backgroundColor: '#f8f9fa',
+                padding: '20px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                border: '1px solid #dee2e6'
+              }}>
+                <h3>{editingPromoCode ? 'Edit Promo Code' : 'Create New Promo Code'}</h3>
+                <form onSubmit={editingPromoCode ? handleUpdatePromoCode : handleCreatePromoCode}>
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px'}}>
+                    <div>
+                      <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>
+                        Code *
+                      </label>
+                      <input
+                        type="text"
+                        value={promoCodeForm.code}
+                        onChange={(e) => setPromoCodeForm({...promoCodeForm, code: e.target.value.toUpperCase()})}
+                        required
+                        placeholder="SUMMER2025"
+                        style={{width: '100%', padding: '8px', border: '1px solid #ced4da', borderRadius: '4px'}}
+                      />
+                    </div>
+                    <div>
+                      <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>
+                        Discount Percentage *
+                      </label>
+                      <input
+                        type="number"
+                        value={promoCodeForm.discountPercent}
+                        onChange={(e) => setPromoCodeForm({...promoCodeForm, discountPercent: e.target.value})}
+                        required
+                        min="1"
+                        max="100"
+                        placeholder="10"
+                        style={{width: '100%', padding: '8px', border: '1px solid #ced4da', borderRadius: '4px'}}
+                      />
+                    </div>
+                    <div style={{gridColumn: '1 / -1'}}>
+                      <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>
+                        Description
+                      </label>
+                      <input
+                        type="text"
+                        value={promoCodeForm.description}
+                        onChange={(e) => setPromoCodeForm({...promoCodeForm, description: e.target.value})}
+                        placeholder="Summer discount for early birds"
+                        style={{width: '100%', padding: '8px', border: '1px solid #ced4da', borderRadius: '4px'}}
+                      />
+                    </div>
+                    <div>
+                      <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>
+                        Expiration Date
+                      </label>
+                      <input
+                        type="date"
+                        value={promoCodeForm.expiresAt}
+                        onChange={(e) => setPromoCodeForm({...promoCodeForm, expiresAt: e.target.value})}
+                        style={{width: '100%', padding: '8px', border: '1px solid #ced4da', borderRadius: '4px'}}
+                      />
+                    </div>
+                    <div>
+                      <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>
+                        Max Uses
+                      </label>
+                      <input
+                        type="number"
+                        value={promoCodeForm.maxUses}
+                        onChange={(e) => setPromoCodeForm({...promoCodeForm, maxUses: e.target.value})}
+                        min="1"
+                        placeholder="Leave empty for unlimited"
+                        style={{width: '100%', padding: '8px', border: '1px solid #ced4da', borderRadius: '4px'}}
+                      />
+                    </div>
+                  </div>
+                  <div style={{display: 'flex', gap: '10px', marginTop: '15px'}}>
+                    <button
+                      type="submit"
+                      style={{
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        padding: '10px 20px',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {editingPromoCode ? 'Update' : 'Create'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelPromoCodeForm}
+                      style={{
+                        backgroundColor: '#6c757d',
+                        color: 'white',
+                        padding: '10px 20px',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {promoCodes.length === 0 ? (
+              <div className="no-data">
+                No promo codes found. Create one to get started!
+              </div>
+            ) : (
+              <div className="promo-codes-list">
+                <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                  <thead>
+                    <tr style={{backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6'}}>
+                      <th style={{padding: '12px', textAlign: 'left'}}>Code</th>
+                      <th style={{padding: '12px', textAlign: 'left'}}>Discount</th>
+                      <th style={{padding: '12px', textAlign: 'left'}}>Description</th>
+                      <th style={{padding: '12px', textAlign: 'left'}}>Usage</th>
+                      <th style={{padding: '12px', textAlign: 'left'}}>Expires</th>
+                      <th style={{padding: '12px', textAlign: 'left'}}>Status</th>
+                      <th style={{padding: '12px', textAlign: 'center'}}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {promoCodes.map((promoCode) => (
+                      <tr key={promoCode.id} style={{borderBottom: '1px solid #dee2e6'}}>
+                        <td style={{padding: '12px', fontWeight: 'bold', fontFamily: 'monospace'}}>
+                          {promoCode.code}
+                        </td>
+                        <td style={{padding: '12px'}}>
+                          {promoCode.discountPercent}%
+                        </td>
+                        <td style={{padding: '12px'}}>
+                          {promoCode.description || '-'}
+                        </td>
+                        <td style={{padding: '12px'}}>
+                          {promoCode.currentUses || 0}
+                          {promoCode.maxUses ? ` / ${promoCode.maxUses}` : ' / Unlimited'}
+                        </td>
+                        <td style={{padding: '12px'}}>
+                          {promoCode.expiresAt ? 
+                            new Date(promoCode.expiresAt.seconds * 1000).toLocaleDateString() : 
+                            'Never'}
+                        </td>
+                        <td style={{padding: '12px'}}>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            backgroundColor: promoCode.active ? '#28a745' : '#dc3545',
+                            color: 'white'
+                          }}>
+                            {promoCode.active ? 'ACTIVE' : 'INACTIVE'}
+                          </span>
+                        </td>
+                        <td style={{padding: '12px', textAlign: 'center'}}>
+                          <div style={{display: 'flex', gap: '5px', justifyContent: 'center'}}>
+                            <button
+                              onClick={() => handleEditPromoCode(promoCode)}
+                              style={{
+                                backgroundColor: '#007bff',
+                                color: 'white',
+                                padding: '5px 10px',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleTogglePromoCodeActive(promoCode)}
+                              style={{
+                                backgroundColor: promoCode.active ? '#ffc107' : '#28a745',
+                                color: 'white',
+                                padding: '5px 10px',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              {promoCode.active ? 'Disable' : 'Enable'}
+                            </button>
+                            <button
+                              onClick={() => handleDeletePromoCode(promoCode)}
+                              style={{
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                padding: '5px 10px',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'settings' && (
           <div className="settings-section">
             <div className="settings-card">
@@ -1379,11 +1941,11 @@ const Admin = () => {
                 <div className={`preview-box ${registrationEnabled ? 'enabled-preview' : 'disabled-preview'}`}>
                   {registrationEnabled ? (
                     <div className="enabled-message">
-                      ✅ Registration form will be displayed to users
+                      ? Registration form will be displayed to users
                     </div>
                   ) : (
                     <div className="disabled-message">
-                      ⚠️ Users will see: "{registrationMessage}"
+                      ?? Users will see: "{registrationMessage}"
                     </div>
                   )}
                 </div>
