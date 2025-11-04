@@ -864,16 +864,25 @@ export const refundPayment = onCall(
 
       // Calculate total refunded (including any previous partial refunds)
       const previousRefunds = registrationData.refundAmount || 0;
-      const totalRefunded = refund.amount / 100; // Convert back to dollars
+      const currentRefundAmount = refund.amount / 100; // Convert back to dollars
+      const totalRefunded = previousRefunds + currentRefundAmount;
 
       // Store refund history
       const refundHistory = registrationData.refundHistory || [];
+      
+      // Determine refund type
+      let refundType = 'full';
+      if (previousRefunds > 0) {
+        // This is completing a partial refund
+        refundType = 'partial_completing_full';
+      }
+      
       refundHistory.push({
         refundId: refund.id,
-        amount: refund.amount / 100,
+        amount: currentRefundAmount,
         reason: reason || 'requested_by_customer',
         refundedAt: new Date().toISOString(),
-        refundType: 'full'
+        refundType: refundType
       });
 
       // Update registration status
