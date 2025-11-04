@@ -1304,11 +1304,12 @@ const Admin = () => {
                               <>
                                 <p><strong>Refund History:</strong></p>
                                 {registration.refundHistory.map((refund, idx) => (
-                                  <div key={idx} style={{marginLeft: '20px', marginTop: '5px'}}>
-                                    <p style={{margin: '2px 0'}}><em>Refund #{idx + 1}</em></p>
+                                  <div key={idx} style={{marginLeft: '20px', marginTop: '5px', paddingTop: '5px', borderTop: idx > 0 ? '1px solid #e5e7eb' : 'none'}}>
+                                    <p style={{margin: '2px 0'}}><em>Refund #{idx + 1} ({refund.refundType === 'full' ? 'Full Refund' : refund.refundType === 'partial_completing_full' ? 'Partial (Completing Full)' : 'Partial Refund'})</em></p>
                                     <p style={{margin: '2px 0'}}>Amount: ${refund.amount}</p>
                                     <p style={{margin: '2px 0'}}>Date: {new Date(refund.refundedAt).toLocaleString()}</p>
                                     <p style={{margin: '2px 0'}}>Reason: {refund.reason}</p>
+                                    <p style={{margin: '2px 0', fontSize: '11px', color: '#6b7280'}}>Refund ID: {refund.refundId}</p>
                                   </div>
                                 ))}
                               </>
