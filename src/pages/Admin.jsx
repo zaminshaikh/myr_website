@@ -31,7 +31,9 @@ const Admin = () => {
   const [editingPromoCode, setEditingPromoCode] = useState(null);
   const [promoCodeForm, setPromoCodeForm] = useState({
     code: '',
+    discountType: 'percentage',
     discountPercent: '',
+    discountAmount: '',
     description: '',
     expiresAt: '',
     maxUses: ''
@@ -182,28 +184,48 @@ const Admin = () => {
   const handleCreatePromoCode = async (e) => {
     e.preventDefault();
     
-    if (!promoCodeForm.code || !promoCodeForm.discountPercent) {
-      alert('Code and discount percentage are required');
+    if (!promoCodeForm.code) {
+      alert('Code is required');
+      return;
+    }
+    
+    if (promoCodeForm.discountType === 'percentage' && !promoCodeForm.discountPercent) {
+      alert('Discount percentage is required');
+      return;
+    }
+    
+    if (promoCodeForm.discountType === 'fixed' && !promoCodeForm.discountAmount) {
+      alert('Discount amount is required');
       return;
     }
 
     try {
       setLoading(true);
       const createPromoCode = httpsCallable(functions, 'createPromoCode');
-      const result = await createPromoCode({
+      const data = {
         code: promoCodeForm.code,
-        discountPercent: parseFloat(promoCodeForm.discountPercent),
+        discountType: promoCodeForm.discountType,
         description: promoCodeForm.description,
         expiresAt: promoCodeForm.expiresAt || null,
         maxUses: promoCodeForm.maxUses ? parseInt(promoCodeForm.maxUses) : null
-      });
+      };
+      
+      if (promoCodeForm.discountType === 'percentage') {
+        data.discountPercent = parseFloat(promoCodeForm.discountPercent);
+      } else {
+        data.discountAmount = parseFloat(promoCodeForm.discountAmount);
+      }
+      
+      const result = await createPromoCode(data);
 
       if (result.data.success) {
         alert('Promo code created successfully!');
         setShowPromoCodeForm(false);
         setPromoCodeForm({
           code: '',
+          discountType: 'percentage',
           discountPercent: '',
+          discountAmount: '',
           description: '',
           expiresAt: '',
           maxUses: ''
@@ -224,6 +246,16 @@ const Admin = () => {
     e.preventDefault();
     
     if (!editingPromoCode) return;
+    
+    if (promoCodeForm.discountType === 'percentage' && !promoCodeForm.discountPercent) {
+      alert('Discount percentage is required');
+      return;
+    }
+    
+    if (promoCodeForm.discountType === 'fixed' && !promoCodeForm.discountAmount) {
+      alert('Discount amount is required');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -231,12 +263,18 @@ const Admin = () => {
       
       const updates = {
         code: promoCodeForm.code,
-        discountPercent: parseFloat(promoCodeForm.discountPercent),
+        discountType: promoCodeForm.discountType,
         description: promoCodeForm.description,
         expiresAt: promoCodeForm.expiresAt || null,
         maxUses: promoCodeForm.maxUses ? parseInt(promoCodeForm.maxUses) : null,
         active: editingPromoCode.active
       };
+      
+      if (promoCodeForm.discountType === 'percentage') {
+        updates.discountPercent = parseFloat(promoCodeForm.discountPercent);
+      } else {
+        updates.discountAmount = parseFloat(promoCodeForm.discountAmount);
+      }
 
       const result = await updatePromoCode({
         promoCodeId: editingPromoCode.id,
@@ -249,7 +287,9 @@ const Admin = () => {
         setShowPromoCodeForm(false);
         setPromoCodeForm({
           code: '',
+          discountType: 'percentage',
           discountPercent: '',
+          discountAmount: '',
           description: '',
           expiresAt: '',
           maxUses: ''
@@ -323,7 +363,9 @@ const Admin = () => {
     setEditingPromoCode(promoCode);
     setPromoCodeForm({
       code: promoCode.code,
-      discountPercent: promoCode.discountPercent.toString(),
+      discountType: promoCode.discountType || 'percentage',
+      discountPercent: promoCode.discountPercent ? promoCode.discountPercent.toString() : '',
+      discountAmount: promoCode.discountAmount ? promoCode.discountAmount.toString() : '',
       description: promoCode.description || '',
       expiresAt: promoCode.expiresAt ? new Date(promoCode.expiresAt.seconds * 1000).toISOString().split('T')[0] : '',
       maxUses: promoCode.maxUses ? promoCode.maxUses.toString() : ''
@@ -336,7 +378,9 @@ const Admin = () => {
     setEditingPromoCode(null);
     setPromoCodeForm({
       code: '',
+      discountType: 'percentage',
       discountPercent: '',
+      discountAmount: '',
       description: '',
       expiresAt: '',
       maxUses: ''
@@ -1692,19 +1736,51 @@ const Admin = () => {
                     </div>
                     <div>
                       <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>
-                        Discount Percentage *
+                        Discount Type *
                       </label>
-                      <input
-                        type="number"
-                        value={promoCodeForm.discountPercent}
-                        onChange={(e) => setPromoCodeForm({...promoCodeForm, discountPercent: e.target.value})}
+                      <select
+                        value={promoCodeForm.discountType}
+                        onChange={(e) => setPromoCodeForm({...promoCodeForm, discountType: e.target.value, discountPercent: '', discountAmount: ''})}
                         required
-                        min="1"
-                        max="100"
-                        placeholder="10"
                         style={{width: '100%', padding: '8px', border: '1px solid #ced4da', borderRadius: '4px'}}
-                      />
+                      >
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="fixed">Fixed Amount ($)</option>
+                      </select>
                     </div>
+                    {promoCodeForm.discountType === 'percentage' ? (
+                      <div>
+                        <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>
+                          Discount Percentage *
+                        </label>
+                        <input
+                          type="number"
+                          value={promoCodeForm.discountPercent}
+                          onChange={(e) => setPromoCodeForm({...promoCodeForm, discountPercent: e.target.value})}
+                          required
+                          min="1"
+                          max="100"
+                          placeholder="10"
+                          style={{width: '100%', padding: '8px', border: '1px solid #ced4da', borderRadius: '4px'}}
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>
+                          Discount Amount *
+                        </label>
+                        <input
+                          type="number"
+                          value={promoCodeForm.discountAmount}
+                          onChange={(e) => setPromoCodeForm({...promoCodeForm, discountAmount: e.target.value})}
+                          required
+                          min="0.01"
+                          step="0.01"
+                          placeholder="50.00"
+                          style={{width: '100%', padding: '8px', border: '1px solid #ced4da', borderRadius: '4px'}}
+                        />
+                      </div>
+                    )}
                     <div style={{gridColumn: '1 / -1'}}>
                       <label style={{display: 'block', marginBottom: '5px', fontWeight: 'bold'}}>
                         Description
@@ -1800,7 +1876,9 @@ const Admin = () => {
                           {promoCode.code}
                         </td>
                         <td style={{padding: '12px'}}>
-                          {promoCode.discountPercent}%
+                          {promoCode.discountType === 'percentage' ? 
+                            `${promoCode.discountPercent}%` : 
+                            `$${promoCode.discountAmount}`}
                         </td>
                         <td style={{padding: '12px'}}>
                           {promoCode.description || '-'}

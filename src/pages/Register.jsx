@@ -523,8 +523,15 @@ export default function Register() {
   const baseTotal = children.length === 1 ? 275 : 275 + (children.length - 1) * 250;
   
   // Apply promo code discount if available
-  const discountAmount = appliedPromoCode ? (baseTotal * appliedPromoCode.discountPercent / 100) : 0;
-  const total = baseTotal - discountAmount;
+  let discountAmount = 0;
+  if (appliedPromoCode) {
+    if (appliedPromoCode.discountType === 'percentage') {
+      discountAmount = baseTotal * appliedPromoCode.discountPercent / 100;
+    } else if (appliedPromoCode.discountType === 'fixed') {
+      discountAmount = appliedPromoCode.discountAmount;
+    }
+  }
+  const total = Math.max(0, baseTotal - discountAmount);
 
   const handleApplyPromoCode = async () => {
     if (!promoCode.trim()) {
@@ -1397,7 +1404,11 @@ export default function Register() {
                 <div style={{marginTop: '10px', padding: '10px', backgroundColor: '#d4edda', border: '1px solid #c3e6cb', borderRadius: '4px'}}>
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                     <div>
-                      <strong style={{color: '#155724'}}>{appliedPromoCode.code}</strong> - {appliedPromoCode.discountPercent}% off
+                      <strong style={{color: '#155724'}}>{appliedPromoCode.code}</strong> - {
+                        appliedPromoCode.discountType === 'percentage' ? 
+                          `${appliedPromoCode.discountPercent}% off` : 
+                          `$${appliedPromoCode.discountAmount} off`
+                      }
                       {appliedPromoCode.description && <div style={{fontSize: '14px', color: '#155724'}}>{appliedPromoCode.description}</div>}
                     </div>
                     <button

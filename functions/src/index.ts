@@ -583,9 +583,11 @@ export const saveRegistration = onCall(
       registrationDoc.promoCode = {
         id: registrationData.promoCode.id,
         code: registrationData.promoCode.code,
-        discountPercent: registrationData.promoCode.discountPercent,
+        discountType: registrationData.promoCode.discountType,
+        discountPercent: registrationData.promoCode.discountPercent || null,
+        discountAmount: registrationData.promoCode.discountAmount || null,
         originalTotal: registrationData.originalTotal,
-        discountAmount: registrationData.discountAmount
+        appliedDiscountAmount: registrationData.discountAmount
       };
     }
     
@@ -2011,14 +2013,31 @@ export const bulkDeleteRegistrations = onCall(async (request) => {
 // Create promo code (for admin portal)
 export const createPromoCode = onCall(async (request) => {
   try {
-    const { code, discountPercent, description, expiresAt, maxUses } = request.data;
+    const { code, discountType, discountPercent, discountAmount, description, expiresAt, maxUses } = request.data;
     
-    if (!code || !discountPercent) {
-      throw new Error("Code and discount percentage are required");
+    if (!code) {
+      throw new Error("Code is required");
     }
     
-    if (discountPercent <= 0 || discountPercent > 100) {
-      throw new Error("Discount percentage must be between 1 and 100");
+    if (!discountType || (discountType !== 'percentage' && discountType !== 'fixed')) {
+      throw new Error("Discount type must be either 'percentage' or 'fixed'");
+    }
+    
+    // Validate based on discount type
+    if (discountType === 'percentage') {
+      if (!discountPercent) {
+        throw new Error("Discount percentage is required for percentage-based promo codes");
+      }
+      if (discountPercent <= 0 || discountPercent > 100) {
+        throw new Error("Discount percentage must be between 1 and 100");
+      }
+    } else if (discountType === 'fixed') {
+      if (!discountAmount) {
+        throw new Error("Discount amount is required for fixed-amount promo codes");
+      }
+      if (discountAmount <= 0) {
+        throw new Error("Discount amount must be greater than 0");
+      }
     }
     
     const db = admin.firestore();
@@ -2033,9 +2052,9 @@ export const createPromoCode = onCall(async (request) => {
       throw new Error("Promo code already exists");
     }
     
-    const promoCodeDoc = {
+    const promoCodeDoc: any = {
       code: code.toUpperCase(),
-      discountPercent: Number(discountPercent),
+      discountType: discountType,
       description: description || '',
       expiresAt: expiresAt ? new Date(expiresAt) : null,
       maxUses: maxUses ? Number(maxUses) : null,
@@ -2045,9 +2064,16 @@ export const createPromoCode = onCall(async (request) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
     
+    // Add the appropriate discount field based on type
+    if (discountType === 'percentage') {
+      promoCodeDoc.discountPercent = Number(discountPercent);
+    } else {
+      promoCodeDoc.discountAmount = Number(discountAmount);
+    }
+    
     const docRef = await db.collection("promoCodes").add(promoCodeDoc);
     
-    logger.info(`Promo code created: ${code}`);
+    logger.info(`Promo code created: ${code} (${discountType})`);
     
     return {
       success: true,
@@ -2101,12 +2127,38 @@ export const updatePromoCode = onCall(async (request) => {
       throw new Error("Promo code not found");
     }
     
+    const currentData = doc.data();
+    
+    // Validate discount type if updating
+    if (updates.discountType !== undefined) {
+      if (updates.discountType !== 'percentage' && updates.discountType !== 'fixed') {
+        throw new Error("Discount type must be either 'percentage' or 'fixed'");
+      }
+    }
+    
+    // Determine which discount type we're working with
+    const discountType = updates.discountType || currentData?.discountType;
+    
     // Validate discount percent if updating
     if (updates.discountPercent !== undefined) {
+      if (discountType !== 'percentage') {
+        throw new Error("Cannot set discount percentage for fixed-amount promo codes");
+      }
       if (updates.discountPercent <= 0 || updates.discountPercent > 100) {
         throw new Error("Discount percentage must be between 1 and 100");
       }
       updates.discountPercent = Number(updates.discountPercent);
+    }
+    
+    // Validate discount amount if updating
+    if (updates.discountAmount !== undefined) {
+      if (discountType !== 'fixed') {
+        throw new Error("Cannot set discount amount for percentage-based promo codes");
+      }
+      if (updates.discountAmount <= 0) {
+        throw new Error("Discount amount must be greater than 0");
+      }
+      updates.discountAmount = Number(updates.discountAmount);
     }
     
     // Validate maxUses if updating
@@ -2206,17 +2258,29 @@ export const validatePromoCode = onCall(async (request) => {
       };
     }
     
-    logger.info(`Promo code validated: ${code}`);
+    logger.info(`Promo code validated: ${code} (${promoCode.discountType})`);
+    
+    // Build response based on discount type
+    const promoCodeData: any = {
+      id: promoCodeDoc.id,
+      code: promoCode.code,
+      discountType: promoCode.discountType,
+      description: promoCode.description
+    };
+    
+    let message = '';
+    if (promoCode.discountType === 'percentage') {
+      promoCodeData.discountPercent = promoCode.discountPercent;
+      message = `Promo code applied! ${promoCode.discountPercent}% discount`;
+    } else if (promoCode.discountType === 'fixed') {
+      promoCodeData.discountAmount = promoCode.discountAmount;
+      message = `Promo code applied! $${promoCode.discountAmount} discount`;
+    }
     
     return {
       success: true,
-      promoCode: {
-        id: promoCodeDoc.id,
-        code: promoCode.code,
-        discountPercent: promoCode.discountPercent,
-        description: promoCode.description
-      },
-      message: `Promo code applied! ${promoCode.discountPercent}% discount`
+      promoCode: promoCodeData,
+      message: message
     };
   } catch (error: any) {
     logger.error("Error validating promo code:", error);
