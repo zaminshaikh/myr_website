@@ -189,14 +189,28 @@ const Admin = () => {
       return;
     }
     
-    if (promoCodeForm.discountType === 'percentage' && !promoCodeForm.discountPercent) {
-      alert('Discount percentage is required');
-      return;
+    if (promoCodeForm.discountType === 'percentage') {
+      if (!promoCodeForm.discountPercent) {
+        alert('Discount percentage is required');
+        return;
+      }
+      const percentValue = parseFloat(promoCodeForm.discountPercent);
+      if (percentValue <= 0 || percentValue > 100) {
+        alert('Discount percentage must be between 1 and 100');
+        return;
+      }
     }
     
-    if (promoCodeForm.discountType === 'fixed' && !promoCodeForm.discountAmount) {
-      alert('Discount amount is required');
-      return;
+    if (promoCodeForm.discountType === 'fixed') {
+      if (!promoCodeForm.discountAmount) {
+        alert('Discount amount is required');
+        return;
+      }
+      const amountValue = parseFloat(promoCodeForm.discountAmount);
+      if (amountValue <= 0) {
+        alert('Discount amount must be greater than 0');
+        return;
+      }
     }
 
     try {
@@ -247,14 +261,28 @@ const Admin = () => {
     
     if (!editingPromoCode) return;
     
-    if (promoCodeForm.discountType === 'percentage' && !promoCodeForm.discountPercent) {
-      alert('Discount percentage is required');
-      return;
+    if (promoCodeForm.discountType === 'percentage') {
+      if (!promoCodeForm.discountPercent) {
+        alert('Discount percentage is required');
+        return;
+      }
+      const percentValue = parseFloat(promoCodeForm.discountPercent);
+      if (percentValue <= 0 || percentValue > 100) {
+        alert('Discount percentage must be between 1 and 100');
+        return;
+      }
     }
     
-    if (promoCodeForm.discountType === 'fixed' && !promoCodeForm.discountAmount) {
-      alert('Discount amount is required');
-      return;
+    if (promoCodeForm.discountType === 'fixed') {
+      if (!promoCodeForm.discountAmount) {
+        alert('Discount amount is required');
+        return;
+      }
+      const amountValue = parseFloat(promoCodeForm.discountAmount);
+      if (amountValue <= 0) {
+        alert('Discount amount must be greater than 0');
+        return;
+      }
     }
 
     try {
@@ -1335,9 +1363,13 @@ const Admin = () => {
                         )}
                         {registration.promoCode && (
                           <>
-                            <p><strong>Promo Code Used:</strong> {registration.promoCode.code} ({registration.promoCode.discountPercent}% off)</p>
+                            <p><strong>Promo Code Used:</strong> {registration.promoCode.code} ({
+                              registration.promoCode.discountType === 'percentage' 
+                                ? `${registration.promoCode.discountPercent}% off`
+                                : `$${registration.promoCode.discountAmount} off`
+                            })</p>
                             <p><strong>Original Amount:</strong> ${registration.promoCode.originalTotal}</p>
-                            <p><strong>Discount Amount:</strong> ${registration.promoCode.discountAmount}</p>
+                            <p><strong>Discount Amount:</strong> ${registration.promoCode.appliedDiscountAmount}</p>
                           </>
                         )}
                         {(registration.status === 'refunded' || registration.status === 'partially_refunded') && (
