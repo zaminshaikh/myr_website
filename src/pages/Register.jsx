@@ -573,6 +573,83 @@ export default function Register() {
     setPromoCodeSuccess('');
   };
 
+  const handleFreeRegistration = async () => {
+    try {
+      setStep(step + 1); // Move to a processing step or show loading
+      
+      // Save registration without payment
+      const saveRegistration = httpsCallable(functions, 'saveRegistration');
+      const registrationResult = await saveRegistration({
+        registrationData: {
+          parent,
+          children,
+          agreement,
+          emergencyContact: {
+            ...emergencyContact,
+            relationship: emergencyContact.relationship === 'Other' ? customRelationship : emergencyContact.relationship
+          },
+          signature,
+          total: 0,
+          promoCode: appliedPromoCode,
+          originalTotal: baseTotal,
+          discountAmount: discountAmount
+        },
+        paymentIntentId: null, // No payment intent for free registrations
+        testMode: testMode
+      });
+
+      if (!registrationResult.data.success) {
+        throw new Error('Failed to save registration');
+      }
+
+      const registrationId = registrationResult.data.registrationId;
+
+      // Increment promo code usage if one was used
+      if (appliedPromoCode?.id) {
+        try {
+          const incrementPromoCodeUsage = httpsCallable(functions, 'incrementPromoCodeUsage');
+          await incrementPromoCodeUsage({ promoCodeId: appliedPromoCode.id });
+        } catch (promoError) {
+          console.error('Failed to increment promo code usage:', promoError);
+          // Don't fail the registration if this fails
+        }
+      }
+
+      // Send confirmation email
+      try {
+        const sendConfirmationEmail = httpsCallable(functions, 'sendConfirmationEmail');
+        await sendConfirmationEmail({
+          recipientEmail: parent.email,
+          recipientName: parent.name,
+          registrationId: registrationId,
+          children: children,
+          total: 0,
+          type: 'registration',
+          registrationData: {
+            parent,
+            children,
+            agreement,
+            emergencyContact: {
+              ...emergencyContact,
+              relationship: emergencyContact.relationship === 'Other' ? customRelationship : emergencyContact.relationship
+            },
+            signature
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+        // Don't fail registration if email fails
+      }
+
+      // Complete the registration
+      await handlePaymentSuccess(registrationId);
+    } catch (error) {
+      console.error('Error processing free registration:', error);
+      alert(`Failed to complete registration: ${error.message}`);
+      setStep(step - 1); // Go back to payment step
+    }
+  };
+
   const handleNext = () => {
     setStep(step + 1);
   };
@@ -1457,7 +1534,7 @@ export default function Register() {
                       <span>${baseTotal}</span>
                     </div>
                     <div className="participant-summary" style={{color: '#28a745'}}>
-                      <span>Discount ({appliedPromoCode.discountPercent}%)</span>
+                      <span>Discount ({appliedPromoCode.discountType === 'percentage' ? `${appliedPromoCode.discountPercent}%` : `$${appliedPromoCode.discountAmount}`})</span>
                       <span>-${discountAmount.toFixed(2)}</span>
                     </div>
                   </>
@@ -1468,25 +1545,63 @@ export default function Register() {
               </div>
             </div>
             
-            <Elements stripe={stripePromise}>
-              <CheckoutForm 
-                registrationData={{ 
-                  parent, 
-                  children, 
-                  agreement, 
-                  emergencyContact: {
-                    ...emergencyContact,
-                    relationship: emergencyContact.relationship === 'Other' ? customRelationship : emergencyContact.relationship
-                  }, 
-                  signature,
-                  promoCode: appliedPromoCode,
-                  originalTotal: baseTotal,
-                  discountAmount: discountAmount
-                }}
-                total={total}
-                onSuccess={handlePaymentSuccess}
-              />
-            </Elements>
+            {total === 0 ? (
+              // Free registration - no payment needed
+              <div style={{marginTop: '30px'}}>
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: '#d4edda',
+                  border: '1px solid #c3e6cb',
+                  borderRadius: '8px',
+                  marginBottom: '20px',
+                  textAlign: 'center'
+                }}>
+                  <h3 style={{color: '#155724', margin: '0 0 10px 0'}}>🎉 Your Registration is Free!</h3>
+                  <p style={{color: '#155724', margin: '0'}}>
+                    Thanks to your promo code, no payment is required. Click below to complete your registration.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleFreeRegistration}
+                  className="next-btn"
+                  style={{
+                    width: '100%',
+                    padding: '15px',
+                    fontSize: '16px',
+                    backgroundColor: '#28a745',
+                    border: 'none',
+                    color: 'white',
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Complete Free Registration
+                </button>
+              </div>
+            ) : (
+              // Paid registration - show Stripe checkout
+              <Elements stripe={stripePromise}>
+                <CheckoutForm 
+                  registrationData={{ 
+                    parent, 
+                    children, 
+                    agreement, 
+                    emergencyContact: {
+                      ...emergencyContact,
+                      relationship: emergencyContact.relationship === 'Other' ? customRelationship : emergencyContact.relationship
+                    }, 
+                    signature,
+                    promoCode: appliedPromoCode,
+                    originalTotal: baseTotal,
+                    discountAmount: discountAmount
+                  }}
+                  total={total}
+                  onSuccess={handlePaymentSuccess}
+                />
+              </Elements>
+            )}
             
             <div className="form-actions">
               <button type="button" onClick={handleBack} className="back-btn">Back</button>

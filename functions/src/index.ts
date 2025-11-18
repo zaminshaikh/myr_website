@@ -571,7 +571,8 @@ export const saveRegistration = onCall(
         generatedAt: waiverPdfUrl ? admin.firestore.FieldValue.serverTimestamp() : null
       },
       total: registrationData.total,
-      status: paymentIntentId ? "paid" : "pending",
+      // If total is 0, mark as paid (free registration), otherwise check for paymentIntentId
+      status: registrationData.total === 0 ? "paid" : (paymentIntentId ? "paid" : "pending"),
       step: 5, // Updated for new step count
       testMode: testMode === true, // Store test mode status
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
