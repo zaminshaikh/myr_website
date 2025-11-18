@@ -2056,7 +2056,7 @@ export const createPromoCode = onCall(async (request) => {
       code: code.toUpperCase(),
       discountType: discountType,
       description: description || '',
-      expiresAt: expiresAt ? new Date(expiresAt) : null,
+      expiresAt: expiresAt ? admin.firestore.Timestamp.fromDate(new Date(expiresAt)) : null,
       maxUses: maxUses ? Number(maxUses) : null,
       currentUses: 0,
       active: true,
@@ -2166,6 +2166,11 @@ export const updatePromoCode = onCall(async (request) => {
       updates.maxUses = Number(updates.maxUses);
     }
     
+    // Convert expiresAt to Timestamp if it's being updated
+    if (updates.expiresAt !== undefined && updates.expiresAt !== null) {
+      updates.expiresAt = admin.firestore.Timestamp.fromDate(new Date(updates.expiresAt));
+    }
+    
     await docRef.update({
       ...updates,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -2243,11 +2248,20 @@ export const validatePromoCode = onCall(async (request) => {
     const promoCode = promoCodeDoc.data();
     
     // Check if expired
-    if (promoCode.expiresAt && promoCode.expiresAt.toDate() < new Date()) {
-      return {
-        success: false,
-        message: "This promo code has expired"
-      };
+    if (promoCode.expiresAt) {
+      try {
+        // Handle both Firestore Timestamp and Date objects
+        const expiryDate = promoCode.expiresAt.toDate ? promoCode.expiresAt.toDate() : new Date(promoCode.expiresAt);
+        if (expiryDate < new Date()) {
+          return {
+            success: false,
+            message: "This promo code has expired"
+          };
+        }
+      } catch (error) {
+        logger.warn(`Invalid expiry date for promo code ${code}:`, error);
+        // If we can't parse the date, treat it as not expired to avoid false positives
+      }
     }
     
     // Check if max uses reached

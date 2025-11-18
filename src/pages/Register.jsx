@@ -32,7 +32,7 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
     const isTestMode = localStorage.getItem('stripe-test-mode') === 'true';
     setTestMode(isTestMode);
     
-    // Create payment intent when component mounts
+    // Create payment intent when component mounts or total changes
     createPaymentIntent();
     
     // Listen for test mode changes
@@ -47,7 +47,7 @@ const CheckoutForm = ({ registrationData, total, onSuccess }) => {
     
     window.addEventListener('stripe-mode-changed', handleModeChange);
     return () => window.removeEventListener('stripe-mode-changed', handleModeChange);
-  }, []);
+  }, [total]); // Recreate payment intent whenever total changes
 
   const createPaymentIntent = async () => {
     try {
