@@ -595,7 +595,7 @@ const Admin = () => {
   };
 
   const exportParticipantsCSV = () => {
-    const headers = ['participantId', 'name', 'dob', 'grade', 'gender', 'guardianName', 'guardianEmail', 'guardianPhone', 'emergencyContactName', 'emergencyContactPhone', 'dietary', 'medical', 'testPayment', 'createdAt'];
+    const headers = ['participantId', 'name', 'dob', 'grade', 'gender', 'guardianName', 'guardianEmail', 'guardianPhone', 'street', 'apartment', 'city', 'state', 'zipCode', 'country', 'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation', 'dietary', 'medical', 'testPayment', 'createdAt'];
     
     const csvData = filteredParticipants.map(participant => ({
       participantId: participant.participantId || '',
@@ -606,8 +606,15 @@ const Admin = () => {
       guardianName: participant.guardian?.name || '',
       guardianEmail: participant.guardian?.email || '',
       guardianPhone: participant.guardian?.phone || '',
+      street: participant.guardian?.address?.street || participant.address?.street || '',
+      apartment: participant.guardian?.address?.apartment || participant.address?.apartment || '',
+      city: participant.guardian?.address?.city || participant.address?.city || '',
+      state: participant.guardian?.address?.state || participant.address?.state || '',
+      zipCode: participant.guardian?.address?.zipCode || participant.address?.zipCode || '',
+      country: participant.guardian?.address?.country || participant.address?.country || '',
       emergencyContactName: participant.emergencyContact?.name || '',
       emergencyContactPhone: participant.emergencyContact?.phone || '',
+      emergencyContactRelation: participant.emergencyContact?.relation || '',
       dietary: participant.dietary || '',
       medical: participant.medical || '',
       testPayment: isTestPayment(participant.guardianId, participant.participantId) ? 'Yes' : 'No',

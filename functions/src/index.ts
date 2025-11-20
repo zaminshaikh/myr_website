@@ -494,8 +494,9 @@ export const saveRegistration = onCall(
         dietary: child.dietary || "",
         medical: child.medical || "",
         emergencyContact: {
-          name: child.emergencyContact,
-          phone: child.emergencyPhone,
+          name: registrationData.emergencyContact?.name || child.emergencyContact || "",
+          phone: registrationData.emergencyContact?.phone || child.emergencyPhone || "",
+          relation: registrationData.emergencyContact?.relationship || registrationData.emergencyContact?.relation || "",
         },
         active: true,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
